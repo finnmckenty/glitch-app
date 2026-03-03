@@ -1,0 +1,25 @@
+// Import all effects to trigger self-registration
+// GPU effects
+import './channel-shift'
+import './posterize'
+import './scanlines'
+import './wave-distortion'
+import './chromatic-aberration'
+import './crt-simulation'
+import './static-noise'
+import './mosaic'
+import './bit-depth'
+import './gradient-map'
+import './hue-shift'
+import './edge-detection'
+import './channel-swap'
+import './pattern-overlay'
+import './slice-shift'
+import './dither'
+import './color-key'
+
+// CPU effects
+import './pixel-sort'
+import './databend'
+import './jpeg-artifacts'
+import './datamosh'
