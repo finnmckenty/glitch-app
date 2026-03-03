@@ -1,5 +1,4 @@
 import type { CanvasDocument, Frame, PolygonMask } from '../types/canvas'
-import type { BlendMode } from '../effects/types'
 import { SharedContext, type FBO } from './shared-context'
 import { FramePipeline } from './frame-pipeline'
 import { ContentRenderer } from './content-renderer'

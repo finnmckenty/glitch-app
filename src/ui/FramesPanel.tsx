@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { useStore } from '../store'
-import type { Frame, FrameContent } from '../types/canvas'
+import type { FrameContent } from '../types/canvas'
 
 function contentTypeIcon(content: FrameContent): string {
   switch (content.type) {

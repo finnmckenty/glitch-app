@@ -1,5 +1,5 @@
 import { registerEffect } from '../registry'
-import type { EffectDefinition, EffectParams, RenderContext } from '../types'
+import type { EffectParams, RenderContext } from '../types'
 
 const fragmentShader = `#version 300 es
 precision highp float;

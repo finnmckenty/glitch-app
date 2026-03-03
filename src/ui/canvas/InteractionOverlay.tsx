@@ -17,7 +17,6 @@ interface Props {
 export default function InteractionOverlay({ viewTransform, viewTransformRef }: Props) {
   const canvasMode = useStore((s) => s.canvasMode)
   const grid = useStore((s) => s.document.grid)
-  const selectedFrameId = useStore((s) => s.selectedFrameId)
   const selectedFrame = useStore((s) =>
     s.selectedFrameId
       ? s.document.frames.find((f) => f.id === s.selectedFrameId) ?? null
@@ -48,7 +47,6 @@ export default function InteractionOverlay({ viewTransform, viewTransformRef }: 
     pendingPoints,
     onLassoClick,
     onLassoDoubleClick,
-    clearLasso,
   } = useLasso(viewTransformRef)
 
   // Wrap pointer down to handle lasso mode

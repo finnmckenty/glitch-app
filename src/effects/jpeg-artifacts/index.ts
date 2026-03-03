@@ -1,5 +1,5 @@
 import { registerEffect } from '../registry'
-import type { EffectDefinition, EffectParams, CpuProcessContext } from '../types'
+import type { EffectParams, CpuProcessContext } from '../types'
 
 async function processJpegArtifacts(
   imageData: ImageData,

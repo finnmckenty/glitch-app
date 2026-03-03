@@ -1,7 +1,5 @@
-import React, { useCallback } from 'react'
-import { useStore } from '../../store'
 import type { ViewTransform } from './use-view-transform'
-import type { Frame, PolygonMask } from '../../types/canvas'
+import type { Frame } from '../../types/canvas'
 
 interface Props {
   frame: Frame
