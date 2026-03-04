@@ -16,6 +16,7 @@ import AIImageDialog from './ui/AIImageDialog'
 import FramesPanel from './ui/FramesPanel'
 import FrameProperties from './ui/FrameProperties'
 import ShapeControls from './ui/ShapeControls'
+import TextControls from './ui/TextControls'
 
 export default function App() {
   const hasFrames = useStore((s) => s.document.frames.length > 0)
@@ -93,6 +94,9 @@ export default function App() {
       if (e.key === 's' || e.key === 'S') {
         store.setCanvasMode('shape')
       }
+      if (e.key === 't' || e.key === 'T') {
+        store.setCanvasMode('text')
+      }
       if (e.key === 'l' || e.key === 'L') {
         if (store.selectedFrameId) {
           store.setCanvasMode('lasso')
@@ -142,9 +146,10 @@ export default function App() {
         <Canvas />
 
         {/* Right panel: frame properties + shape controls + effect chain + effect controls */}
-        <div className="w-52 bg-neutral-900 border-l border-neutral-800 overflow-y-auto">
+        <div className="w-64 bg-neutral-900 border-l border-neutral-800 overflow-y-auto">
           <FrameProperties />
           <ShapeControls />
+          <TextControls />
           <div className="border-t border-neutral-800">
             <EffectChain />
           </div>

@@ -3,7 +3,6 @@ import type { ShapeContent } from '../types/canvas'
 
 const SHAPE_TYPES: { value: ShapeContent['shape']; label: string }[] = [
   { value: 'rectangle', label: 'Rectangle' },
-  { value: 'square', label: 'Square' },
   { value: 'circle', label: 'Circle' },
   { value: 'triangle', label: 'Triangle' },
 ]
@@ -119,6 +118,21 @@ export default function ShapeControls() {
           </span>
         </div>
       )}
+
+      {/* Aliased edges */}
+      <div className="flex items-center gap-2">
+        <label className="text-[10px] text-neutral-500 w-14 shrink-0">Aliased</label>
+        <button
+          onClick={() => updateContent({ aliased: !content.aliased })}
+          className={`text-[10px] px-1.5 py-0.5 rounded border ${
+            content.aliased
+              ? 'border-neutral-500 text-white bg-neutral-700'
+              : 'border-neutral-700 text-neutral-600 bg-neutral-800'
+          }`}
+        >
+          {content.aliased ? 'On' : 'Off'}
+        </button>
+      </div>
     </div>
   )
 }

@@ -62,7 +62,7 @@ const MIN_FRAME_SIZE = 10 // document pixels
 
 interface Args {
   viewTransformRef: RefObject<ViewTransform>
-  canvasMode: 'select' | 'draw' | 'shape' | 'lasso'
+  canvasMode: 'select' | 'draw' | 'shape' | 'lasso' | 'text'
   gridLines: GridLines
   snapEnabled: boolean
 }
@@ -193,7 +193,7 @@ export function usePointerInteraction({
       const doc = getDocCoords(e)
       const store = useStore.getState()
 
-      if (canvasMode === 'draw' || canvasMode === 'shape') {
+      if (canvasMode === 'draw' || canvasMode === 'shape' || canvasMode === 'text') {
         stateRef.current = {
           type: 'drawing',
           startDocX: doc.x,
@@ -316,8 +316,12 @@ export function usePointerInteraction({
 
       if (state.type === 'drawing') {
         let rect = normalizeRect(state.startDocX, state.startDocY, doc.x, doc.y)
+        // Shift-constrain to square when in shape mode
+        if (e.shiftKey && canvasMode === 'shape') {
+          const size = Math.max(rect.width, rect.height)
+          rect = { x: state.startDocX < doc.x ? rect.x : rect.x + rect.width - size, y: state.startDocY < doc.y ? rect.y : rect.y + rect.height - size, width: size, height: size }
+        }
         if (shouldSnap(e)) {
-          // Snap all four edges
           rect = snapResize(rect, 'se', gridLines)
           rect = snapResize(rect, 'nw', gridLines)
         }
@@ -326,7 +330,7 @@ export function usePointerInteraction({
       }
 
       // Idle — update cursor based on hover
-      if (canvasMode === 'draw' || canvasMode === 'shape') {
+      if (canvasMode === 'draw' || canvasMode === 'shape' || canvasMode === 'text') {
         setCursor('crosshair')
       } else {
         const store = useStore.getState()
@@ -356,6 +360,11 @@ export function usePointerInteraction({
       if (state.type === 'drawing') {
         const doc = getDocCoords(e)
         let rect = normalizeRect(state.startDocX, state.startDocY, doc.x, doc.y)
+        // Shift-constrain to square when in shape mode
+        if (e.shiftKey && canvasMode === 'shape') {
+          const size = Math.max(rect.width, rect.height)
+          rect = { x: state.startDocX < doc.x ? rect.x : rect.x + rect.width - size, y: state.startDocY < doc.y ? rect.y : rect.y + rect.height - size, width: size, height: size }
+        }
         if (shouldSnap(e)) {
           rect = snapResize(rect, 'se', gridLines)
           rect = snapResize(rect, 'nw', gridLines)
@@ -374,6 +383,24 @@ export function usePointerInteraction({
               },
               rect
             )
+          } else if (canvasMode === 'text') {
+            store.addFrame(
+              {
+                type: 'text',
+                text: 'Type here',
+                fontFamily: 'inter',
+                fontSize: 48,
+                fontWeight: 400,
+                color: [1, 1, 1],
+                align: 'left',
+                letterSpacing: 0,
+                lineHeight: 1.2,
+                textTransform: 'none',
+                strikethrough: false,
+                underline: false,
+              },
+              rect
+            )
           } else {
             store.addFrame(
               { type: 'solid-color', color: [0.2, 0.2, 0.2] },
@@ -386,7 +413,7 @@ export function usePointerInteraction({
       }
 
       stateRef.current = { type: 'idle' }
-      setCursor(canvasMode === 'draw' || canvasMode === 'shape' ? 'crosshair' : 'default')
+      setCursor(canvasMode === 'draw' || canvasMode === 'shape' || canvasMode === 'text' ? 'crosshair' : 'default')
       ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
     },
     [canvasMode, getDocCoords, gridLines, shouldSnap]

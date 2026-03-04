@@ -90,10 +90,10 @@ interface GlitchState {
   clearChain: () => void
 
   // Canvas interaction
-  canvasMode: 'select' | 'draw' | 'shape' | 'lasso'
-  setCanvasMode: (mode: 'select' | 'draw' | 'shape' | 'lasso') => void
-  selectedShapeType: 'rectangle' | 'circle' | 'square' | 'triangle'
-  setSelectedShapeType: (shape: 'rectangle' | 'circle' | 'square' | 'triangle') => void
+  canvasMode: 'select' | 'draw' | 'shape' | 'lasso' | 'text'
+  setCanvasMode: (mode: 'select' | 'draw' | 'shape' | 'lasso' | 'text') => void
+  selectedShapeType: 'rectangle' | 'circle' | 'triangle'
+  setSelectedShapeType: (shape: 'rectangle' | 'circle' | 'triangle') => void
 
   // UI
   selectEffect: (instanceId: string | null) => void
@@ -346,9 +346,9 @@ export const useStore = create<GlitchState>()(
         },
 
         // Canvas interaction
-        canvasMode: 'select' as 'select' | 'draw' | 'shape' | 'lasso',
+        canvasMode: 'select' as 'select' | 'draw' | 'shape' | 'lasso' | 'text',
         setCanvasMode: (mode) => set((s) => { s.canvasMode = mode }),
-        selectedShapeType: 'rectangle' as 'rectangle' | 'circle' | 'square' | 'triangle',
+        selectedShapeType: 'rectangle' as 'rectangle' | 'circle' | 'triangle',
         setSelectedShapeType: (shape) => set((s) => { s.selectedShapeType = shape }),
 
         // UI

@@ -115,12 +115,22 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog }: { onOpenPrese
                          border border-neutral-700 focus:outline-none focus:border-neutral-500"
               >
                 <option value="rectangle">Rect</option>
-                <option value="square">Square</option>
                 <option value="circle">Circle</option>
                 <option value="triangle">Triangle</option>
               </select>
             )}
           </div>
+          <button
+            onClick={() => setCanvasMode('text')}
+            className={`px-2 py-0.5 text-[10px] rounded ${
+              canvasMode === 'text'
+                ? 'bg-neutral-700 text-white'
+                : 'text-neutral-500 hover:text-white'
+            }`}
+            title="Text tool (T)"
+          >
+            Text
+          </button>
           <button
             onClick={() => setCanvasMode('lasso')}
             className={`px-2 py-0.5 text-[10px] rounded ${

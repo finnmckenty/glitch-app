@@ -21,9 +21,24 @@ export interface TextContent {
   fontFamily: string
   fontSize: number
   fontWeight: number
+  /** wdth axis (75-125, where supported) */
+  fontWidth?: number
+  /** slnt axis (-12 to 0, where supported) */
+  fontSlant?: number
+  /** CASL axis (0-1, Recursive only) */
+  fontCasual?: number
   /** RGB 0-1 */
   color: [number, number, number]
   align: 'left' | 'center' | 'right'
+  /** em units */
+  letterSpacing: number
+  /** line height multiplier */
+  lineHeight: number
+  textTransform: 'none' | 'uppercase' | 'lowercase'
+  strikethrough: boolean
+  underline: boolean
+  /** PS1-style aliased rendering */
+  aliased?: boolean
 }
 
 export interface GradientContent {
@@ -41,12 +56,14 @@ export interface PatternContent {
 
 export interface ShapeContent {
   type: 'shape'
-  shape: 'circle' | 'rectangle' | 'square' | 'triangle'
+  shape: 'circle' | 'rectangle' | 'triangle'
   /** RGB 0-1 */
   fill: [number, number, number]
   /** RGB 0-1, or null for no stroke */
   stroke: [number, number, number] | null
   strokeWidth: number
+  /** Render with PS1-style aliased (jagged) edges */
+  aliased?: boolean
 }
 
 export interface AIImageContent {

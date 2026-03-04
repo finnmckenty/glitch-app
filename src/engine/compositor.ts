@@ -3,6 +3,7 @@ import { SharedContext, type FBO } from './shared-context'
 import { FramePipeline } from './frame-pipeline'
 import { ContentRenderer } from './content-renderer'
 import { createProgram, createProgramFull, setUniform } from './shader-compiler'
+import { onFontLoaded } from './font-loader'
 
 const PASSTHROUGH_FRAG = `#version 300 es
 precision highp float;
@@ -175,11 +176,16 @@ export class Compositor {
   private _dirty = false
   private _asyncFailCount = 0
   private static MAX_ASYNC_RETRIES = 3
+  private _unsubFont: (() => void) | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.ctx = new SharedContext(canvas)
     this.pipeline = new FramePipeline(this.ctx)
     this.content = new ContentRenderer(this.ctx)
+    // Re-render when any font finishes loading (text frames need this)
+    this._unsubFont = onFontLoaded(() => {
+      this._dirty = true
+    })
   }
 
   /** Update the document state — triggers re-render on next frame */
@@ -721,6 +727,7 @@ export class Compositor {
   dispose(): void {
     this._disposed = true
     this.stopLoop()
+    if (this._unsubFont) this._unsubFont()
     this.pipeline.dispose()
     this.content.dispose()
     if (this.compFBO) this.ctx.releaseFBO(this.compFBO)
