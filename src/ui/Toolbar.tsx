@@ -150,6 +150,7 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog }: { onOpenPrese
           >
             Import Image
           </button>
+          {/* Hidden until public launch to avoid API costs
           <button
             onClick={onShowAIDialog}
             className="px-2 py-0.5 text-[10px] text-neutral-500 hover:text-white"
@@ -157,6 +158,7 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog }: { onOpenPrese
           >
             Create Image
           </button>
+          */}
           <input
             ref={importInputRef}
             type="file"
