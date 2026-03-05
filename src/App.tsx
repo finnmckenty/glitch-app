@@ -135,7 +135,7 @@ export default function App() {
       {showAIDialog && <AIImageDialog onClose={() => setShowAIDialog(false)} />}
       <div className="flex-1 flex overflow-hidden">
         {/* Left panel: frames + effect browser */}
-        <div className="w-44 bg-neutral-900 border-r border-neutral-800 overflow-y-auto flex flex-col">
+        <div className="w-64 bg-neutral-900 border-r border-neutral-800 overflow-y-auto flex flex-col">
           <FramesPanel />
           <div className="border-t border-neutral-800">
             <EffectBrowser />

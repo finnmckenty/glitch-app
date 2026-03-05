@@ -38,14 +38,20 @@ export default function EffectControls() {
     <div className="p-2 space-y-3">
       <h3 className="text-xs font-bold text-neutral-300 px-1">{def.name}</h3>
       <p className="text-[10px] text-neutral-600 px-1">{def.description}</p>
-      {def.paramDefs.map((param) => (
-        <ParamControl
-          key={param.key}
-          param={param}
-          value={instance.params[param.key]}
-          onChange={(v) => updateParams(instance.id, { [param.key]: v })}
-        />
-      ))}
+      {def.paramDefs
+        .filter((param) => {
+          if (!param.showWhen) return true
+          const depValue = instance.params[param.showWhen.key] ?? def.paramDefs.find((p) => p.key === param.showWhen!.key)?.default
+          return param.showWhen.values.includes(depValue)
+        })
+        .map((param) => (
+          <ParamControl
+            key={param.key}
+            param={param}
+            value={instance.params[param.key]}
+            onChange={(v) => updateParams(instance.id, { [param.key]: v })}
+          />
+        ))}
     </div>
   )
 }
@@ -146,6 +152,41 @@ function ParamControl({
               </option>
             ))}
           </select>
+        </div>
+      )
+    }
+    case 'image': {
+      const imgVal = value as string | null
+      return (
+        <div className="px-1">
+          <label className="text-[10px] text-neutral-500 block mb-0.5">{param.label}</label>
+          {imgVal && (
+            <div className="relative mb-1">
+              <img src={imgVal} className="w-full h-16 object-contain bg-neutral-900 rounded border border-neutral-700" />
+              <button
+                onClick={() => onChange(null)}
+                className="absolute top-0.5 right-0.5 w-4 h-4 bg-neutral-800 rounded-full text-[8px] text-neutral-400 hover:text-white flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              const reader = new FileReader()
+              reader.onload = () => onChange(reader.result as string)
+              reader.readAsDataURL(file)
+              e.target.value = '' // reset so same file can be re-selected
+            }}
+            className="w-full text-[10px] text-neutral-500
+                     file:bg-neutral-800 file:text-neutral-300 file:border-0
+                     file:rounded file:text-[10px] file:px-2 file:py-0.5
+                     file:mr-2 file:cursor-pointer"
+          />
         </div>
       )
     }

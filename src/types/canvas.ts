@@ -161,7 +161,7 @@ export const DEFAULT_GRID: GridConfig = {
 
 export const DEFAULT_DOCUMENT: CanvasDocument = {
   width: 1080,
-  height: 1080,
+  height: 1920,
   backgroundColor: [0, 0, 0],
   backgroundAlpha: 1,
   frames: [],

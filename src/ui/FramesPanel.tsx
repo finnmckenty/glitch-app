@@ -15,19 +15,6 @@ function contentTypeIcon(content: FrameContent): string {
   }
 }
 
-function contentTypeLabel(content: FrameContent): string {
-  switch (content.type) {
-    case 'image': return 'Image'
-    case 'solid-color': return 'Color'
-    case 'shape': return content.shape
-    case 'ai-image': return 'AI Image'
-    case 'text': return 'Text'
-    case 'gradient': return 'Gradient'
-    case 'pattern': return 'Pattern'
-    default: return 'Unknown'
-  }
-}
-
 export default function FramesPanel() {
   const frames = useStore((s) => s.document.frames)
   const selectedFrameId = useStore((s) => s.selectedFrameId)
@@ -134,11 +121,6 @@ export default function FramesPanel() {
                 <span className="truncate block">{frame.name}</span>
               )}
             </div>
-
-            {/* Type label */}
-            <span className="text-[9px] text-neutral-600 shrink-0">
-              {contentTypeLabel(frame.content)}
-            </span>
 
             {/* Visibility toggle */}
             <button

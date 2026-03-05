@@ -227,7 +227,7 @@ export class FramePipeline {
       pp.current = (1 - writeIdx) as 0 | 1
       return pp.textures[writeIdx]
     } catch (err) {
-      console.warn(`[FramePipeline] CPU effect '${inst.effectId}' failed, skipping:`, err)
+      console.error(`[FramePipeline] CPU effect '${inst.effectId}' failed, skipping:`, err)
       return source
     } finally {
       // ---- Restore GL state ----

@@ -13,11 +13,11 @@ const SIZE_PRESETS = [
   { label: 'Custom', w: 0, h: 0 },
 ] as const
 
-export default function EmptyState({ onShowAIDialog }: { onShowAIDialog: () => void }) {
+export default function EmptyState({ onShowAIDialog: _onShowAIDialog }: { onShowAIDialog: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [canvasWidth, setCanvasWidth] = useState(1080)
-  const [canvasHeight, setCanvasHeight] = useState(1080)
-  const [selectedPreset, setSelectedPreset] = useState(0) // index into SIZE_PRESETS
+  const [canvasHeight, setCanvasHeight] = useState(1920)
+  const [selectedPreset, setSelectedPreset] = useState(1) // index into SIZE_PRESETS
   const [transparentBg, setTransparentBg] = useState(false)
 
   // Sync canvas size and alpha to store whenever they change
@@ -218,6 +218,7 @@ export default function EmptyState({ onShowAIDialog }: { onShowAIDialog: () => v
           >
             Import Image
           </button>
+          {/* Hidden until public launch to avoid API costs
           <button
             onClick={onShowAIDialog}
             className="px-3 py-1.5 text-xs bg-emerald-900/50 text-emerald-300 rounded
@@ -225,6 +226,7 @@ export default function EmptyState({ onShowAIDialog }: { onShowAIDialog: () => v
           >
             Create Image
           </button>
+          */}
           <button
             onClick={handleSurpriseMe}
             className="px-3 py-1.5 text-xs bg-blue-900/50 text-blue-300 rounded

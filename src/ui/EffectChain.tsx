@@ -85,7 +85,7 @@ export default function EffectChain() {
               className="w-5 h-5 flex items-center justify-center text-xs hover:text-white"
               title={inst.enabled ? 'Disable' : 'Enable'}
             >
-              {inst.enabled ? '\u25C9' : '\u25CB'}
+              {inst.enabled ? '\u{1F441}' : '\u2014'}
             </button>
             <span className="flex-1 truncate">{def?.name ?? inst.effectId}</span>
             <button

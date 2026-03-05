@@ -56,6 +56,14 @@ async function processJpegArtifacts(
   const finalCtx = currentCanvas.getContext('2d')!
   const result = finalCtx.getImageData(0, 0, width, height)
 
+  // JPEG doesn't support alpha — restore original alpha channel so
+  // transparent regions in shapes/text stay transparent after encoding.
+  const origData = imageData.data
+  const resultData = result.data
+  for (let i = 3; i < origData.length; i += 4) {
+    resultData[i] = origData[i]
+  }
+
   // Mix: blend between original and crushed
   if (mix < 1) {
     const orig = imageData.data

@@ -4,7 +4,7 @@ import { getCompositor } from './Canvas'
 import { loadImageFromFile } from '../engine/image-loader'
 import { cacheBitmap } from '../engine/bitmap-cache'
 
-export default function Toolbar({ onOpenPresets, onShowAIDialog }: { onOpenPresets: () => void; onShowAIDialog: () => void }) {
+export default function Toolbar({ onOpenPresets, onShowAIDialog: _onShowAIDialog }: { onOpenPresets: () => void; onShowAIDialog: () => void }) {
   const undo = useStore((s) => s.undo)
   const redo = useStore((s) => s.redo)
   const historyIndex = useStore((s) => s.historyIndex)
@@ -82,7 +82,7 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog }: { onOpenPrese
             }`}
             title="Move &amp; resize (V)"
           >
-            Move
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></svg>
           </button>
           <button
             onClick={() => setCanvasMode('draw')}
@@ -93,7 +93,7 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog }: { onOpenPrese
             }`}
             title="Draw frame (F)"
           >
-            Frame
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 2h6M16 2h6M2 2v6M22 2v6M2 22h6M16 22h6M2 16v6M22 16v6"/></svg>
           </button>
           <div className="relative flex items-center">
             <button
@@ -105,7 +105,7 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog }: { onOpenPrese
               }`}
               title="Shape tool (S)"
             >
-              Shape
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/></svg>
             </button>
             {canvasMode === 'shape' && (
               <select

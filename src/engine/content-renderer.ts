@@ -13,8 +13,8 @@ export class ContentRenderer {
   private scratchCanvas: OffscreenCanvas | null = null
   /** Hidden DOM canvas for text rendering (supports font-variation-settings) */
   private textCanvas: HTMLCanvasElement | null = null
-  /** OffscreenCanvas used to copy text rendering for WebGL upload */
-  private textUploadCanvas: OffscreenCanvas | null = null
+  /** OffscreenCanvas used to Y-flip content before WebGL upload */
+  private uploadCanvas: OffscreenCanvas | null = null
 
   constructor(ctx: SharedContext) {
     this.ctx = ctx
@@ -127,7 +127,19 @@ export class ContentRenderer {
         ctx2d.fill()
         if (stroke) ctx2d.stroke()
 
-        const tex = this.ctx.uploadToTexture(canvas, cached?.texture, !!aliased)
+        // Copy to upload canvas with Y-flip for WebGL's bottom-up convention.
+        // Images are pre-flipped via createImageBitmap({ imageOrientation: 'flipY' });
+        // shapes need the same treatment.
+        const upload = this.getUploadCanvas(rw, rh)
+        const uploadCtx = upload.getContext('2d')!
+        uploadCtx.clearRect(0, 0, rw, rh)
+        uploadCtx.save()
+        uploadCtx.translate(0, rh)
+        uploadCtx.scale(1, -1)
+        uploadCtx.drawImage(canvas, 0, 0)
+        uploadCtx.restore()
+
+        const tex = this.ctx.uploadToTexture(upload, cached?.texture, !!aliased)
         this.cache.set(frame.id, { texture: tex, hash })
         return tex
       }
@@ -169,7 +181,7 @@ export class ContentRenderer {
           // Copy to OffscreenCanvas for WebGL texture upload, flipping Y.
           // Images are pre-flipped via createImageBitmap({ imageOrientation: 'flipY' });
           // text needs the same treatment for correct orientation in WebGL.
-          const upload = this.getTextUploadCanvas(rw, rh)
+          const upload = this.getUploadCanvas(rw, rh)
           const uploadCtx = upload.getContext('2d')!
           uploadCtx.clearRect(0, 0, rw, rh)
           uploadCtx.save()
@@ -353,12 +365,12 @@ export class ContentRenderer {
     return this.textCanvas
   }
 
-  /** OffscreenCanvas for copying text rendering before WebGL upload */
-  private getTextUploadCanvas(width: number, height: number): OffscreenCanvas {
-    if (!this.textUploadCanvas || this.textUploadCanvas.width !== width || this.textUploadCanvas.height !== height) {
-      this.textUploadCanvas = new OffscreenCanvas(width, height)
+  /** OffscreenCanvas for Y-flipping content before WebGL upload */
+  private getUploadCanvas(width: number, height: number): OffscreenCanvas {
+    if (!this.uploadCanvas || this.uploadCanvas.width !== width || this.uploadCanvas.height !== height) {
+      this.uploadCanvas = new OffscreenCanvas(width, height)
     }
-    return this.textUploadCanvas
+    return this.uploadCanvas
   }
 
   private getScratchCanvas(width: number, height: number): OffscreenCanvas {

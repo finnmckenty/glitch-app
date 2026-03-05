@@ -9,7 +9,7 @@ export type EffectCategory =
 
 export type EffectExecutionContext = 'gpu' | 'cpu' | 'hybrid'
 
-export type ParamType = 'number' | 'boolean' | 'select' | 'color' | 'vec2'
+export type ParamType = 'number' | 'boolean' | 'select' | 'color' | 'vec2' | 'image'
 
 export interface EffectParamDef {
   key: string
@@ -20,6 +20,8 @@ export interface EffectParamDef {
   max?: number
   step?: number
   options?: Array<{ value: unknown; label: string }>
+  /** Only show this param when another param has one of the listed values */
+  showWhen?: { key: string; values: unknown[] }
   /** Hint for LLM prompt interpretation */
   semanticHint?: string
 }
