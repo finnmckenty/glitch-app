@@ -64,6 +64,44 @@ export default function FrameProperties() {
         <span className="text-[10px] text-neutral-500">°</span>
       </div>
 
+      {/* Fill Color */}
+      <div className="flex items-center gap-2">
+        <label className="text-[10px] text-neutral-500 w-14 shrink-0">Fill</label>
+        <input
+          type="color"
+          value={frame.fillColor
+            ? '#' + frame.fillColor.map((v: number) => Math.round(v * 255).toString(16).padStart(2, '0')).join('')
+            : '#000000'}
+          onChange={(e) => {
+            const hex = e.target.value
+            const r = parseInt(hex.slice(1, 3), 16) / 255
+            const g = parseInt(hex.slice(3, 5), 16) / 255
+            const b = parseInt(hex.slice(5, 7), 16) / 255
+            updateFrame(selectedFrameId, { fillColor: [r, g, b] } as any)
+          }}
+          className="w-6 h-6 rounded border border-neutral-700 bg-transparent cursor-pointer shrink-0"
+        />
+      </div>
+
+      {/* Fill Opacity */}
+      <div className="flex items-center gap-2">
+        <label className="text-[10px] text-neutral-500 w-14 shrink-0">Fill α</label>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round((frame.fillOpacity ?? 1) * 100)}
+          onChange={(e) => {
+            const opacity = Number(e.target.value) / 100
+            updateFrame(selectedFrameId, { fillOpacity: opacity })
+          }}
+          className="flex-1 h-1 accent-neutral-400"
+        />
+        <span className="text-[10px] text-neutral-500 w-8 text-right">
+          {Math.round((frame.fillOpacity ?? 1) * 100)}%
+        </span>
+      </div>
+
       {/* Blend Mode */}
       <div className="flex items-center gap-2">
         <label className="text-[10px] text-neutral-500 w-14 shrink-0">Blend</label>

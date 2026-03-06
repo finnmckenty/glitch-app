@@ -71,7 +71,24 @@ function ParamControl({
       return (
         <div className="px-1">
           <div className="flex items-center justify-between mb-0.5">
-            <label className="text-[10px] text-neutral-500">{param.label}</label>
+            <div className="flex items-center gap-1">
+              <label className="text-[10px] text-neutral-500">{param.label}</label>
+              {param.randomize && (
+                <button
+                  onClick={() => {
+                    const min = param.min ?? 0
+                    const max = param.max ?? 100
+                    const step = param.step ?? 1
+                    const val = min + Math.random() * (max - min)
+                    onChange(Math.round(val / step) * step)
+                  }}
+                  className="text-[10px] text-neutral-600 hover:text-white transition-colors"
+                  title="Regenerate"
+                >
+                  🎲
+                </button>
+              )}
+            </div>
             <span className="text-[10px] text-neutral-600 font-mono">{numVal}</span>
           </div>
           <input

@@ -2,7 +2,7 @@ import { getAllEffects } from '../effects/registry'
 import type { EffectInstance, EffectParamDef } from '../effects/types'
 import { uid } from '../utils/math'
 
-function randomParamValue(param: EffectParamDef): unknown {
+export function randomParamValue(param: EffectParamDef): unknown {
   switch (param.type) {
     case 'number': {
       const min = param.min ?? 0

@@ -22,6 +22,8 @@ export interface EffectParamDef {
   options?: Array<{ value: unknown; label: string }>
   /** Only show this param when another param has one of the listed values */
   showWhen?: { key: string; values: unknown[] }
+  /** Auto-randomize this param when effect is first added */
+  randomize?: boolean
   /** Hint for LLM prompt interpretation */
   semanticHint?: string
 }

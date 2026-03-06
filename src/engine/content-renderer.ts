@@ -20,36 +20,69 @@ export class ContentRenderer {
     this.ctx = ctx
   }
 
+  /** Hash suffix for frame fill properties (empty string if no fill) */
+  private fillHash(frame: Frame): string {
+    if (!frame.fillColor) return ''
+    const a = frame.fillOpacity ?? 1
+    return `:fill(${frame.fillColor[0]},${frame.fillColor[1]},${frame.fillColor[2]},${a})`
+  }
+
+  /** Fill a canvas with the frame's background fill color/opacity */
+  private fillBackground(ctx2d: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D, w: number, h: number, frame: Frame): void {
+    if (!frame.fillColor) return
+    const [fr, fg, fb] = frame.fillColor
+    const a = frame.fillOpacity ?? 1
+    if (a <= 0) return
+    ctx2d.fillStyle = `rgba(${Math.round(fr * 255)}, ${Math.round(fg * 255)}, ${Math.round(fb * 255)}, ${a})`
+    ctx2d.fillRect(0, 0, w, h)
+  }
+
   /**
    * Get or create a source texture for a frame's content.
    * Returns null if content can't be rasterized yet.
    */
   getTexture(frame: Frame): WebGLTexture | null {
+    const fh = this.fillHash(frame)
+
     switch (frame.content.type) {
       case 'image': {
         const bitmap = getCachedBitmap(frame.id)
         if (!bitmap) return null
 
-        const hash = `image:${frame.id}:${bitmap.width}x${bitmap.height}`
+        const hash = `image:${frame.id}:${bitmap.width}x${bitmap.height}${fh}`
         const cached = this.cache.get(frame.id)
         if (cached && cached.hash === hash) return cached.texture
 
-        // Upload (reuse existing texture if dimensions match)
-        const tex = this.ctx.uploadToTexture(bitmap, cached?.texture)
+        let tex: WebGLTexture
+        if (frame.fillColor) {
+          // Composite fill + image via Canvas 2D
+          const canvas = this.getScratchCanvas(bitmap.width, bitmap.height)
+          const ctx2d = canvas.getContext('2d')!
+          ctx2d.clearRect(0, 0, bitmap.width, bitmap.height)
+          this.fillBackground(ctx2d, bitmap.width, bitmap.height, frame)
+          ctx2d.drawImage(bitmap, 0, 0)
+          tex = this.ctx.uploadToTexture(canvas, cached?.texture)
+        } else {
+          // Direct upload (fast path)
+          tex = this.ctx.uploadToTexture(bitmap, cached?.texture)
+        }
         this.cache.set(frame.id, { texture: tex, hash })
         return tex
       }
 
       case 'solid-color': {
         const [r, g, b] = frame.content.color
-        const hash = `solid:${r}:${g}:${b}:${frame.width}x${frame.height}`
+        // fillOpacity controls the alpha of the solid color itself (the content IS the fill)
+        const alpha = frame.fillOpacity ?? 1
+        const hash = `solid:${r}:${g}:${b}:${alpha}:${frame.width}x${frame.height}`
         const cached = this.cache.get(frame.id)
         if (cached && cached.hash === hash) return cached.texture
 
         // Rasterize solid color via Canvas 2D
         const canvas = this.getScratchCanvas(frame.width, frame.height)
         const ctx2d = canvas.getContext('2d')!
-        ctx2d.fillStyle = `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`
+        ctx2d.clearRect(0, 0, frame.width, frame.height)
+        ctx2d.fillStyle = `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${alpha})`
         ctx2d.fillRect(0, 0, frame.width, frame.height)
 
         const tex = this.ctx.uploadToTexture(canvas, cached?.texture)
@@ -62,11 +95,21 @@ export class ContentRenderer {
         const bitmap = getCachedBitmap(frame.id)
         if (!bitmap) return null
 
-        const hash = `ai-image:${frame.id}:${bitmap.width}x${bitmap.height}`
+        const hash = `ai-image:${frame.id}:${bitmap.width}x${bitmap.height}${fh}`
         const cached = this.cache.get(frame.id)
         if (cached && cached.hash === hash) return cached.texture
 
-        const tex = this.ctx.uploadToTexture(bitmap, cached?.texture)
+        let tex: WebGLTexture
+        if (frame.fillColor) {
+          const canvas = this.getScratchCanvas(bitmap.width, bitmap.height)
+          const ctx2d = canvas.getContext('2d')!
+          ctx2d.clearRect(0, 0, bitmap.width, bitmap.height)
+          this.fillBackground(ctx2d, bitmap.width, bitmap.height, frame)
+          ctx2d.drawImage(bitmap, 0, 0)
+          tex = this.ctx.uploadToTexture(canvas, cached?.texture)
+        } else {
+          tex = this.ctx.uploadToTexture(bitmap, cached?.texture)
+        }
         this.cache.set(frame.id, { texture: tex, hash })
         return tex
       }
@@ -76,7 +119,9 @@ export class ContentRenderer {
         const scale = aliased ? 0.25 : 1
         const rw = Math.max(1, Math.round(frame.width * scale))
         const rh = Math.max(1, Math.round(frame.height * scale))
-        const hash = `shape:${shape}:${fill}:${stroke}:${strokeWidth}:${aliased}:${rw}x${rh}`
+        // fillOpacity controls the shape's fill alpha (unified with solid-color)
+        const fillAlpha = frame.fillOpacity ?? 1
+        const hash = `shape:${shape}:${fill}:${stroke}:${strokeWidth}:${aliased}:${fillAlpha}:${rw}x${rh}`
         const cached = this.cache.get(frame.id)
         if (cached && cached.hash === hash) return cached.texture
 
@@ -87,7 +132,7 @@ export class ContentRenderer {
         const fr = Math.round(fill[0] * 255)
         const fg = Math.round(fill[1] * 255)
         const fb = Math.round(fill[2] * 255)
-        ctx2d.fillStyle = `rgb(${fr}, ${fg}, ${fb})`
+        ctx2d.fillStyle = `rgba(${fr}, ${fg}, ${fb}, ${fillAlpha})`
 
         const sw = strokeWidth * scale
         if (stroke) {
@@ -167,7 +212,7 @@ export class ContentRenderer {
           const rw = Math.max(1, Math.round(frame.width * scale))
           const rh = Math.max(1, Math.round(frame.height * scale))
 
-          const hash = `text:${content.text}:${content.fontFamily}:${content.fontSize}:${content.fontWeight}:${content.fontWidth ?? ''}:${content.fontSlant ?? ''}:${content.fontCasual ?? ''}:${content.color}:${content.align}:${content.letterSpacing}:${content.lineHeight}:${content.textTransform}:${content.strikethrough}:${content.underline}:${aliased}:${rw}x${rh}`
+          const hash = `text:${content.text}:${content.fontFamily}:${content.fontSize}:${content.fontWeight}:${content.fontWidth ?? ''}:${content.fontSlant ?? ''}:${content.fontCasual ?? ''}:${content.color}:${content.align}:${content.letterSpacing}:${content.lineHeight}:${content.textTransform}:${content.strikethrough}:${content.underline}:${aliased}:${rw}x${rh}${fh}`
           const cached = this.cache.get(frame.id)
           if (cached && cached.hash === hash) return cached.texture
 
@@ -176,6 +221,7 @@ export class ContentRenderer {
           const domCanvas = this.getTextCanvas(rw, rh)
           const ctx2d = domCanvas.getContext('2d')!
           ctx2d.clearRect(0, 0, rw, rh)
+          this.fillBackground(ctx2d, rw, rh, frame)
           this.renderText(ctx2d, content, rw, rh, scale)
 
           // Copy to OffscreenCanvas for WebGL texture upload, flipping Y.

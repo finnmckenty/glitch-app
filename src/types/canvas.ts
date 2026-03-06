@@ -115,6 +115,10 @@ export interface Frame {
   rotation: number
   /** Optional polygon mask — if set, masks the frame's output */
   mask?: PolygonMask
+  /** Background fill color for the frame (RGB 0-1). Rendered behind content. */
+  fillColor?: [number, number, number]
+  /** Opacity of the background fill (0-1). Independent of frame opacity. */
+  fillOpacity?: number
 }
 
 // ---- Canvas Document ----

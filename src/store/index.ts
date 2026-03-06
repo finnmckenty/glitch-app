@@ -4,6 +4,7 @@ import { immer } from 'zustand/middleware/immer'
 import type { EffectInstance, EffectParams, BlendMode } from '../effects/types'
 import { getEffect } from '../effects/registry'
 import { uid } from '../utils/math'
+import { randomParamValue } from '../prompt/randomizer'
 import type { CanvasDocument, Frame, FrameContent, GridConfig } from '../types/canvas'
 import { DEFAULT_DOCUMENT } from '../types/canvas'
 
@@ -43,7 +44,7 @@ function createEffectInstance(effectId: string): EffectInstance | null {
   if (!def) return null
   const defaults: EffectParams = {}
   for (const p of def.paramDefs) {
-    defaults[p.key] = p.default
+    defaults[p.key] = p.randomize ? randomParamValue(p) : p.default
   }
   return {
     id: uid(),
