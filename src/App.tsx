@@ -19,7 +19,7 @@ import ShapeControls from './ui/ShapeControls'
 import TextControls from './ui/TextControls'
 
 export default function App() {
-  const hasFrames = useStore((s) => s.document.frames.length > 0)
+  const documentCreated = useStore((s) => s.documentCreated)
   const [showPresets, setShowPresets] = useState(false)
   const [showAIDialog, setShowAIDialog] = useState(false)
 
@@ -116,7 +116,7 @@ export default function App() {
     return () => document.removeEventListener('keydown', handler)
   }, [])
 
-  if (!hasFrames) {
+  if (!documentCreated) {
     return (
       <div className="h-full flex flex-col">
         <Toolbar onOpenPresets={() => setShowPresets(true)} onShowAIDialog={() => setShowAIDialog(true)} />

@@ -61,6 +61,7 @@ function createEffectInstance(effectId: string): EffectInstance | null {
 interface GlitchState {
   // Document model
   document: CanvasDocument
+  documentCreated: boolean
 
   // Selection
   selectedFrameId: string | null
@@ -69,6 +70,8 @@ interface GlitchState {
   // Frame CRUD
   addFrame: (content: FrameContent, rect?: { x: number; y: number; width: number; height: number }) => string
   removeFrame: (frameId: string) => void
+  resetDocument: () => void
+  createDocument: () => void
   updateFrame: (frameId: string, patch: Partial<Omit<Frame, 'id' | 'effectChain'>>) => void
   selectFrame: (frameId: string | null) => void
   reorderFramesByIds: (orderedIds: string[]) => void
@@ -144,6 +147,7 @@ export const useStore = create<GlitchState>()(
       (set, get) => ({
         // Document
         document: { ...DEFAULT_DOCUMENT, frames: [], globalEffectChain: [], grid: { ...DEFAULT_DOCUMENT.grid } },
+        documentCreated: false,
 
         // Selection
         selectedFrameId: null,
@@ -174,6 +178,7 @@ export const useStore = create<GlitchState>()(
             s.document.frames.push(frame as any)
             s.selectedFrameId = frameId
             s.selectedEffectId = null
+            s.documentCreated = true
           })
           get().pushHistory()
           get().bumpGeneration()
@@ -190,6 +195,23 @@ export const useStore = create<GlitchState>()(
           })
           get().pushHistory()
           get().bumpGeneration()
+        },
+
+        resetDocument: () => {
+          set((s) => {
+            s.document = { ...DEFAULT_DOCUMENT, frames: [], globalEffectChain: [], grid: { ...DEFAULT_DOCUMENT.grid } } as any
+            s.documentCreated = false
+            s.selectedFrameId = null
+            s.selectedEffectId = null
+            s.history = [JSON.parse(JSON.stringify(DEFAULT_DOCUMENT))]
+            s.historyIndex = 0
+          })
+          get().bumpGeneration()
+        },
+
+        createDocument: () => {
+          set((s) => { s.documentCreated = true })
+          get().pushHistory()
         },
 
         updateFrame: (frameId, patch) => {

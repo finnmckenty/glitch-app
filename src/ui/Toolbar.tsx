@@ -9,7 +9,7 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog: _onShowAIDialog
   const redo = useStore((s) => s.redo)
   const historyIndex = useStore((s) => s.historyIndex)
   const historyLength = useStore((s) => s.history.length)
-  const clearChain = useStore((s) => s.clearChain)
+  const resetDocument = useStore((s) => s.resetDocument)
   const hasFrames = useStore((s) => s.document.frames.length > 0)
   const canvasMode = useStore((s) => s.canvasMode)
   const setCanvasMode = useStore((s) => s.setCanvasMode)
@@ -183,7 +183,7 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog: _onShowAIDialog
         Presets
       </button>
       <button
-        onClick={clearChain}
+        onClick={resetDocument}
         className="px-2 py-0.5 text-[10px] text-neutral-600 hover:text-red-400"
       >
         Clear

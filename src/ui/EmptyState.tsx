@@ -1,5 +1,4 @@
-import { useCallback, useRef, useState, useEffect } from 'react'
-import { loadImageFromFile } from '../engine/image-loader'
+import { useCallback, useState, useEffect } from 'react'
 import { useStore } from '../store'
 import { cacheBitmap } from '../engine/bitmap-cache'
 import { generateRandomChain } from '../prompt/randomizer'
@@ -14,7 +13,6 @@ const SIZE_PRESETS = [
 ] as const
 
 export default function EmptyState({ onShowAIDialog: _onShowAIDialog }: { onShowAIDialog: () => void }) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [canvasWidth, setCanvasWidth] = useState(1080)
   const [canvasHeight, setCanvasHeight] = useState(1920)
   const [selectedPreset, setSelectedPreset] = useState(1) // index into SIZE_PRESETS
@@ -39,55 +37,9 @@ export default function EmptyState({ onShowAIDialog: _onShowAIDialog }: { onShow
     }
   }, [])
 
-  const handleFile = useCallback(async (file: File) => {
-    const result = await loadImageFromFile(file)
-    const store = useStore.getState()
-    const doc = store.document
-    // Fit image at native aspect ratio, centered in canvas (no upscale)
-    const imgW = result.meta.width
-    const imgH = result.meta.height
-    const s = Math.min(doc.width / imgW, doc.height / imgH, 1)
-    const w = Math.round(imgW * s)
-    const h = Math.round(imgH * s)
-    const frameId = store.addFrame(
-      {
-        type: 'image',
-        sourceUrl: URL.createObjectURL(file),
-        meta: result.meta,
-      },
-      {
-        x: Math.round((doc.width - w) / 2),
-        y: Math.round((doc.height - h) / 2),
-        width: w,
-        height: h,
-      }
-    )
-    cacheBitmap(frameId, result.bitmap)
+  const handleNewDocument = useCallback(() => {
+    useStore.getState().createDocument()
   }, [])
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault()
-      const file = e.dataTransfer.files[0]
-      if (file?.type.startsWith('image/')) handleFile(file)
-    },
-    [handleFile]
-  )
-
-  const handlePaste = useCallback(
-    (e: React.ClipboardEvent) => {
-      const items = e.clipboardData?.items
-      if (!items) return
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile()
-          if (file) handleFile(file)
-          break
-        }
-      }
-    },
-    [handleFile]
-  )
 
   // Generate noise as starting image with random effects
   const handleSurpriseMe = useCallback(() => {
@@ -140,20 +92,11 @@ export default function EmptyState({ onShowAIDialog: _onShowAIDialog }: { onShow
   return (
     <div
       className="flex-1 flex items-center justify-center bg-neutral-950"
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={handleDrop}
-      onPaste={handlePaste}
-      tabIndex={0}
     >
       <div className="text-center space-y-5 max-w-md">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-neutral-200 tracking-tight">
-            GLITCH
-          </h1>
-          <p className="text-xs text-neutral-600">
-            Drop an image here to start
-          </p>
-        </div>
+        <h1 className="text-2xl font-bold text-neutral-200 tracking-tight">
+          GLITCH
+        </h1>
 
         {/* Canvas size controls */}
         <div className="space-y-2">
@@ -212,21 +155,12 @@ export default function EmptyState({ onShowAIDialog: _onShowAIDialog }: { onShow
         {/* Action buttons */}
         <div className="flex gap-2 justify-center">
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handleNewDocument}
             className="px-3 py-1.5 text-xs bg-neutral-800 text-neutral-300 rounded
                      hover:bg-neutral-700 hover:text-white transition-colors border border-neutral-700"
           >
-            Import Image
+            New Document
           </button>
-          {/* Hidden until public launch to avoid API costs
-          <button
-            onClick={onShowAIDialog}
-            className="px-3 py-1.5 text-xs bg-emerald-900/50 text-emerald-300 rounded
-                     hover:bg-emerald-800/50 hover:text-emerald-200 transition-colors border border-emerald-800/50"
-          >
-            Create Image
-          </button>
-          */}
           <button
             onClick={handleSurpriseMe}
             className="px-3 py-1.5 text-xs bg-blue-900/50 text-blue-300 rounded
@@ -235,21 +169,6 @@ export default function EmptyState({ onShowAIDialog: _onShowAIDialog }: { onShow
             Surprise Me
           </button>
         </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) handleFile(file)
-          }}
-        />
-
-        <p className="text-[10px] text-neutral-700">
-          or paste from clipboard (Cmd+V)
-        </p>
       </div>
     </div>
   )

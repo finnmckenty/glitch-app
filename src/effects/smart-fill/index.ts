@@ -29,6 +29,7 @@ uniform int u_system;       // 0=opacity, 1=scale, 2=both
 uniform float u_seed;
 uniform float u_fillScale;
 uniform float u_intensity;
+uniform float u_scaleLevel;  // 1-4 discrete scale level
 uniform vec3 u_color1;
 uniform vec3 u_color2;
 uniform float u_colorIntensity;
@@ -140,14 +141,27 @@ float getCellOpacity(vec2 cellId, float seed, float intensity, int system) {
   return 1.0;
 }
 
-float getCellScale(vec2 cellId, float seed, float intensity, int system) {
+float getCellScale(vec2 cellId, float seed, float scaleLevel, int system) {
   if (system == 1 || system == 2) {
-    // Use lump noise for scale (spatially correlated)
-    float noise = getLumpNoise(cellId, seed);
-    // Map noise to scale range. Intensity controls the range width.
-    float minScale = mix(1.0, 0.3, intensity);
-    float maxScale = mix(1.0, 2.5, intensity);
-    return mix(minScale, maxScale, noise);
+    // 4 discrete levels, each with one fixed size and percentage:
+    //   1: 5% at 2x2,  2: 10% at 2x2,  3: 7% at 3x3,  4: 7% at 4x4
+    int level = int(scaleLevel);
+    float probability;
+    float scaleValue;
+
+    if (level <= 1) {
+      probability = 0.05; scaleValue = 2.128; // 2 cells wide
+    } else if (level == 2) {
+      probability = 0.10; scaleValue = 2.128; // 2 cells wide
+    } else if (level == 3) {
+      probability = 0.07; scaleValue = 3.191; // 3 cells wide
+    } else {
+      probability = 0.07; scaleValue = 4.255; // 4 cells wide
+    }
+
+    float selectHash = hash21(cellId * 5.73 + seed * 0.317 + 37.0);
+    if (selectHash >= probability) return 1.0;
+    return scaleValue;
   }
   return 1.0;
 }
@@ -176,30 +190,29 @@ void main() {
   // Triangles nearly touching: ~1-2px gap between shapes
   float shapeSize = 0.47; // half-extent relative to cell (~94% fill)
 
-  // ── Neighborhood sampling (3×3) ──
-  // For scale variation, shapes can overflow their cell.
-  // For each pixel, find the LARGEST covering shape (replace, not overlap).
+  // ── Neighborhood sampling (5×5) ──
+  // Scaled-up triangles (2-4 cells wide) overflow their cell boundaries.
+  // 5×5 covers the max reach of a 4-cell-wide triangle (±2 grid units in X).
+  // For opacity-only (system=0), all scales are 1.0 so the early-out
+  // effectively reduces this to 3×3 with minimal overhead.
   float bestShape = 0.0;
   float bestScale = 0.0;
   float bestOpacity = 0.0;
   vec3 bestColor = u_color1;
 
-  for (int dy = -1; dy <= 1; dy++) {
-    for (int dx = -1; dx <= 1; dx++) {
+  for (int dy = -2; dy <= 2; dy++) {
+    for (int dx = -2; dx <= 2; dx++) {
       vec2 neighbor = cellId + vec2(float(dx), float(dy));
 
-      // Per-cell opacity (dual-layer: lumps + scatter)
       float cellOpacity = getCellOpacity(neighbor, u_seed, u_intensity, u_system);
-
-      // Skip invisible cells entirely
       if (cellOpacity < 0.01) continue;
 
-      float cellScale = getCellScale(neighbor, u_seed, u_intensity, u_system);
+      float cellScale = getCellScale(neighbor, u_seed, u_scaleLevel, u_system);
 
-      // Position relative to neighbor's center
+      // Skip distant cells that aren't scaled up (can't overflow to this pixel)
+      if ((abs(dx) > 1 || abs(dy) > 1) && cellScale < 1.5) continue;
+
       vec2 rel = gridPos - neighbor - 0.5;
-
-      // Shape test at this cell's scale
       float s = shapeAt(rel, shapeSize * cellScale, u_shape);
 
       // Largest covering shape wins (replace behavior)
@@ -240,7 +253,8 @@ registerEffect({
     ], semanticHint: 'Which variation system to apply' },
     { key: 'seed', label: 'Seed', type: 'number', default: 0, min: 0, max: 9999, step: 1, randomize: true, semanticHint: 'Pattern seed — each value produces a unique arrangement' },
     { key: 'fillScale', label: 'Scale', type: 'number', default: 24, min: 8, max: 120, step: 1, semanticHint: 'Grid cell size in pixels' },
-    { key: 'intensity', label: 'Intensity', type: 'number', default: 0.5, min: 0, max: 1, step: 0.01, semanticHint: 'Amount of variation (0 = uniform grid, 1 = maximum)' },
+    { key: 'intensity', label: 'Intensity', type: 'number', default: 0.5, min: 0, max: 1, step: 0.01, showWhen: { key: 'system', values: [0, 2] }, semanticHint: 'Amount of opacity variation (0 = uniform grid, 1 = maximum)' },
+    { key: 'scaleLevel', label: 'Scale Level', type: 'number', default: 1, min: 1, max: 4, step: 1, showWhen: { key: 'system', values: [1, 2] }, semanticHint: 'Scale variation level: 1-2 = 2x triangles, 3 = 3x, 4 = 4x' },
     { key: 'color1', label: 'Base Color', type: 'color', default: [0.85, 0.85, 0.85], semanticHint: 'Primary shape color' },
     { key: 'color2', label: 'Accent Color', type: 'color', default: [0.8, 1.0, 0.2], semanticHint: 'Secondary accent color for color variation' },
     { key: 'colorIntensity', label: 'Color Variation', type: 'number', default: 0, min: 0, max: 1, step: 0.01, semanticHint: 'Amount of accent color scattered across shapes (0 = off, 1 = maximum)' },
@@ -254,6 +268,7 @@ registerEffect({
         u_seed: params.seed as number,
         u_fillScale: params.fillScale as number,
         u_intensity: params.intensity as number,
+        u_scaleLevel: params.scaleLevel as number,
         u_color1: params.color1 as number[],
         u_color2: params.color2 as number[],
         u_colorIntensity: params.colorIntensity as number,
