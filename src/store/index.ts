@@ -395,7 +395,7 @@ export const useStore = create<GlitchState>()(
         // Canvas interaction
         canvasMode: 'select' as 'select' | 'draw' | 'shape' | 'lasso' | 'text',
         setCanvasMode: (mode) => set((s) => { s.canvasMode = mode }),
-        selectedShapeType: 'rectangle' as 'rectangle' | 'circle' | 'triangle',
+        selectedShapeType: 'circle' as 'rectangle' | 'circle' | 'triangle',
         setSelectedShapeType: (shape) => set((s) => { s.selectedShapeType = shape }),
 
         // UI

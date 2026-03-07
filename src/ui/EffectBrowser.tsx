@@ -3,18 +3,28 @@ import { getAllEffects } from '../effects/registry'
 import { useStore } from '../store'
 import type { EffectCategory } from '../effects/types'
 
+const CATEGORY_ORDER: EffectCategory[] = [
+  'overlay',
+  'color',
+  'distortion',
+  'noise-artifacts',
+  'pixel-manipulation',
+]
+
 const CATEGORY_LABELS: Record<EffectCategory, string> = {
-  'pixel-manipulation': 'Pixel',
+  'overlay': 'Overlay',
+  'color': 'Color',
   'distortion': 'Distortion',
   'noise-artifacts': 'Noise',
-  'color': 'Color',
-  'overlay': 'Overlay',
+  'pixel-manipulation': 'Pixel',
 }
 
 export default function EffectBrowser() {
   const addEffect = useStore((s) => s.addEffect)
   const effects = getAllEffects()
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(
+    Object.fromEntries(CATEGORY_ORDER.map((c) => [c, true]))
+  )
 
   const grouped = effects.reduce((acc, eff) => {
     if (!acc[eff.category]) acc[eff.category] = []
@@ -27,7 +37,7 @@ export default function EffectBrowser() {
       <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 px-1">
         Add Effect
       </h3>
-      {Object.entries(grouped).map(([category, effs]) => (
+      {CATEGORY_ORDER.filter((c) => grouped[c]).map((category) => (
         <div key={category}>
           <button
             onClick={() => setCollapsed(prev => ({ ...prev, [category]: !prev[category] }))}
@@ -40,7 +50,7 @@ export default function EffectBrowser() {
           </button>
           {!collapsed[category] && (
             <div className="space-y-0.5">
-              {effs.map((eff) => (
+              {grouped[category].map((eff) => (
                 <button
                   key={eff.id}
                   onClick={() => addEffect(eff.id)}
