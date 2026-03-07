@@ -4,6 +4,7 @@ import { FramePipeline } from './frame-pipeline'
 import { ContentRenderer } from './content-renderer'
 import { createProgram, createProgramFull, setUniform } from './shader-compiler'
 import { onFontLoaded } from './font-loader'
+import { getCachedBitmap, cacheBitmap, BACKGROUND_BITMAP_KEY } from './bitmap-cache'
 
 const PASSTHROUGH_FRAG = `#version 300 es
 precision highp float;
@@ -22,6 +23,26 @@ uniform float u_opacity;
 out vec4 fragColor;
 void main() {
   vec4 color = texture(u_texture, v_texCoord);
+  fragColor = vec4(color.rgb, color.a * u_opacity);
+}`
+
+/** Cover-mode blit: scales image to fill viewport while preserving aspect ratio (crop to cover). */
+const COVER_BLIT_FRAG = `#version 300 es
+precision highp float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+uniform vec2 u_srcSize;
+uniform vec2 u_dstSize;
+uniform float u_opacity;
+out vec4 fragColor;
+void main() {
+  float srcAspect = u_srcSize.x / u_srcSize.y;
+  float dstAspect = u_dstSize.x / u_dstSize.y;
+  vec2 scale = srcAspect > dstAspect
+    ? vec2(dstAspect / srcAspect, 1.0)
+    : vec2(1.0, srcAspect / dstAspect);
+  vec2 uv = (v_texCoord - 0.5) * scale + 0.5;
+  vec4 color = texture(u_texture, uv);
   fragColor = vec4(color.rgb, color.a * u_opacity);
 }`
 
@@ -164,6 +185,10 @@ export class Compositor {
   private compFBO: FBO | null = null
   // Destination copy FBO — used for shader-based blend modes
   private destCopyFBO: FBO | null = null
+  // Background image texture cache
+  private bgTexture: WebGLTexture | null = null
+  private bgTextureHash = ''
+  private _bgReloading = false
 
   // Mask textures (per frame, keyed by frame ID)
   private maskCache = new Map<string, { texture: WebGLTexture; hash: string; fbo: FBO }>()
@@ -299,13 +324,10 @@ export class Compositor {
     this.ensureCompFBO(doc.width, doc.height)
     this.resizeCanvas(doc.width, doc.height)
 
-    // Clear composition FBO to background color (with alpha)
+    // Clear composition FBO to background
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.compFBO!.framebuffer)
     gl.viewport(0, 0, doc.width, doc.height)
-    const [r, g, b] = doc.backgroundColor
-    const bgAlpha = doc.backgroundAlpha ?? 1
-    gl.clearColor(r * bgAlpha, g * bgAlpha, b * bgAlpha, bgAlpha)
-    gl.clear(gl.COLOR_BUFFER_BIT)
+    this.drawBackground(gl, doc)
 
     for (const frame of frames) {
       const srcTex = this.content.getTexture(frame)
@@ -368,10 +390,7 @@ export class Compositor {
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.compFBO!.framebuffer)
       gl.viewport(0, 0, doc.width, doc.height)
-      const [r, g, b] = doc.backgroundColor
-      const bgAlpha = doc.backgroundAlpha ?? 1
-      gl.clearColor(r * bgAlpha, g * bgAlpha, b * bgAlpha, bgAlpha)
-      gl.clear(gl.COLOR_BUFFER_BIT)
+      this.drawBackground(gl, doc)
 
       for (const frame of frames) {
         const srcTex = this.content.getTexture(frame)
@@ -689,15 +708,75 @@ export class Compositor {
     this.ctx.drawQuad()
   }
 
+  /** Get or upload background image texture (returns null for color backgrounds or missing bitmaps) */
+  private getBackgroundTexture(doc: CanvasDocument): WebGLTexture | null {
+    if (doc.background.type !== 'image') return null
+    const bitmap = getCachedBitmap(BACKGROUND_BITMAP_KEY)
+    if (!bitmap) {
+      // Bitmap missing — try async reload from blob URL
+      this.reloadBackgroundBitmap(doc.background.sourceUrl)
+      return null
+    }
+    const hash = `bg:${doc.background.sourceUrl}:${bitmap.width}x${bitmap.height}`
+    if (this.bgTexture && this.bgTextureHash === hash) return this.bgTexture
+    this.bgTexture = this.ctx.uploadToTexture(bitmap, this.bgTexture ?? undefined)
+    this.bgTextureHash = hash
+    return this.bgTexture
+  }
+
+  private async reloadBackgroundBitmap(sourceUrl: string): Promise<void> {
+    if (this._bgReloading) return
+    this._bgReloading = true
+    try {
+      const resp = await fetch(sourceUrl)
+      const blob = await resp.blob()
+      const bitmap = await createImageBitmap(blob, { imageOrientation: 'flipY' })
+      cacheBitmap(BACKGROUND_BITMAP_KEY, bitmap)
+      this._dirty = true
+    } catch {
+      // blob URL may have been revoked
+    } finally {
+      this._bgReloading = false
+    }
+  }
+
+  /** Clear FBO and draw document background (color or image). Assumes FBO/viewport already bound. */
+  private drawBackground(gl: WebGL2RenderingContext, doc: CanvasDocument): void {
+    const bg = doc.background
+    if (bg.type === 'color') {
+      const [r, g, b] = bg.color
+      const a = bg.alpha
+      gl.clearColor(r * a, g * a, b * a, a)
+      gl.clear(gl.COLOR_BUFFER_BIT)
+    } else {
+      // Image: clear to transparent, then blit image
+      gl.clearColor(0, 0, 0, 0)
+      gl.clear(gl.COLOR_BUFFER_BIT)
+      const bgTex = this.getBackgroundTexture(doc)
+      if (bgTex) {
+        gl.enable(gl.BLEND)
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+        const program = createProgram(gl, COVER_BLIT_FRAG)
+        gl.useProgram(program)
+        gl.activeTexture(gl.TEXTURE0)
+        gl.bindTexture(gl.TEXTURE_2D, bgTex)
+        const texLoc = gl.getUniformLocation(program, 'u_texture')
+        if (texLoc) gl.uniform1i(texLoc, 0)
+        setUniform(gl, program, 'u_srcSize', [bg.meta.width, bg.meta.height])
+        setUniform(gl, program, 'u_dstSize', [doc.width, doc.height])
+        setUniform(gl, program, 'u_opacity', bg.alpha)
+        this.ctx.drawQuad()
+        gl.disable(gl.BLEND)
+      }
+    }
+  }
+
   private clearScreen(doc: CanvasDocument): void {
     const { gl } = this.ctx
     this.resizeCanvas(doc.width, doc.height)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
     gl.viewport(0, 0, doc.width, doc.height)
-    const [r, g, b] = doc.backgroundColor
-    const bgAlpha = doc.backgroundAlpha ?? 1
-    gl.clearColor(r * bgAlpha, g * bgAlpha, b * bgAlpha, bgAlpha)
-    gl.clear(gl.COLOR_BUFFER_BIT)
+    this.drawBackground(gl, doc)
   }
 
   private resizeCanvas(width: number, height: number): void {
@@ -732,6 +811,7 @@ export class Compositor {
     this.content.dispose()
     if (this.compFBO) this.ctx.releaseFBO(this.compFBO)
     if (this.destCopyFBO) this.ctx.releaseFBO(this.destCopyFBO)
+    if (this.bgTexture) this.ctx.deleteTexture(this.bgTexture)
     for (const cached of this.maskCache.values()) {
       this.ctx.deleteTexture(cached.texture)
       this.ctx.releaseFBO(cached.fbo)

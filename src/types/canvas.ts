@@ -121,15 +121,39 @@ export interface Frame {
   fillOpacity?: number
 }
 
+// ---- Background ----
+
+export interface BackgroundColor {
+  type: 'color'
+  /** RGB 0-1 */
+  color: [number, number, number]
+  /** 0-1 (0 = transparent, 1 = opaque) */
+  alpha: number
+}
+
+export interface BackgroundImage {
+  type: 'image'
+  /** Blob URL for the loaded background image */
+  sourceUrl: string
+  meta: { width: number; height: number; name: string }
+  /** 0-1 (0 = transparent, 1 = opaque) */
+  alpha: number
+}
+
+export type Background = BackgroundColor | BackgroundImage
+
+export const DEFAULT_BACKGROUND: Background = {
+  type: 'color',
+  color: [0, 0, 0],
+  alpha: 1,
+}
+
 // ---- Canvas Document ----
 
 export interface CanvasDocument {
   width: number
   height: number
-  /** RGB 0-1 */
-  backgroundColor: [number, number, number]
-  /** Background alpha 0-1 (0 = transparent, 1 = opaque). Affects export. */
-  backgroundAlpha: number
+  background: Background
   frames: Frame[]
   globalEffectChain: EffectInstance[]
   grid: GridConfig
@@ -166,8 +190,7 @@ export const DEFAULT_GRID: GridConfig = {
 export const DEFAULT_DOCUMENT: CanvasDocument = {
   width: 1080,
   height: 1920,
-  backgroundColor: [0, 0, 0],
-  backgroundAlpha: 1,
+  background: { ...DEFAULT_BACKGROUND },
   frames: [],
   globalEffectChain: [],
   grid: { ...DEFAULT_GRID },

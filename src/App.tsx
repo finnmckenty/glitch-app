@@ -14,6 +14,7 @@ import EffectChain from './ui/EffectChain'
 import EffectControls from './ui/EffectControls'
 import AIImageDialog from './ui/AIImageDialog'
 import FramesPanel from './ui/FramesPanel'
+import DocumentProperties from './ui/DocumentProperties'
 import FrameProperties from './ui/FrameProperties'
 import ShapeControls from './ui/ShapeControls'
 import TextControls from './ui/TextControls'
@@ -145,8 +146,9 @@ export default function App() {
         {/* Center: canvas */}
         <Canvas />
 
-        {/* Right panel: frame properties + shape controls + effect chain + effect controls */}
+        {/* Right panel: document + frame properties + shape controls + effect chain + effect controls */}
         <div className="w-64 bg-neutral-900 border-l border-neutral-800 overflow-y-auto">
+          <DocumentProperties />
           <FrameProperties />
           <ShapeControls />
           <TextControls />

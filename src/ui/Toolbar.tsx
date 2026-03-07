@@ -10,7 +10,7 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog: _onShowAIDialog
   const historyIndex = useStore((s) => s.historyIndex)
   const historyLength = useStore((s) => s.history.length)
   const resetDocument = useStore((s) => s.resetDocument)
-  const hasFrames = useStore((s) => s.document.frames.length > 0)
+  const documentCreated = useStore((s) => s.documentCreated)
   const canvasMode = useStore((s) => s.canvasMode)
   const setCanvasMode = useStore((s) => s.setCanvasMode)
   const selectedShapeType = useStore((s) => s.selectedShapeType)
@@ -70,7 +70,7 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog: _onShowAIDialog
         Redo
       </button>
 
-      {hasFrames && (
+      {documentCreated && (
         <>
           <div className="w-px h-4 bg-neutral-700 mx-1" />
           <button
@@ -188,7 +188,7 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog: _onShowAIDialog
       >
         Clear
       </button>
-      {hasFrames && (
+      {documentCreated && (
         <button
           onClick={handleExport}
           className="px-2 py-0.5 text-[10px] bg-neutral-800 text-neutral-300 rounded hover:bg-neutral-700 hover:text-white border border-neutral-700"

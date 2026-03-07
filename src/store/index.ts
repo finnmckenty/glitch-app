@@ -5,8 +5,10 @@ import type { EffectInstance, EffectParams, BlendMode } from '../effects/types'
 import { getEffect } from '../effects/registry'
 import { uid } from '../utils/math'
 import { randomParamValue } from '../prompt/randomizer'
-import type { CanvasDocument, Frame, FrameContent, GridConfig } from '../types/canvas'
-import { DEFAULT_DOCUMENT } from '../types/canvas'
+import type { CanvasDocument, Frame, FrameContent, GridConfig, Background } from '../types/canvas'
+import { DEFAULT_DOCUMENT, DEFAULT_BACKGROUND } from '../types/canvas'
+import { loadImageFromFile } from '../engine/image-loader'
+import { cacheBitmap, removeCachedBitmap, BACKGROUND_BITMAP_KEY } from '../engine/bitmap-cache'
 
 // ---- Persisted types ----
 
@@ -78,8 +80,9 @@ interface GlitchState {
 
   // Canvas
   setCanvasSize: (width: number, height: number) => void
-  setBackgroundColor: (color: [number, number, number]) => void
-  setBackgroundAlpha: (alpha: number) => void
+  setBackground: (background: Background) => void
+  setBackgroundImage: (file: File) => Promise<void>
+  clearBackgroundImage: () => void
   updateGrid: (patch: Partial<GridConfig>) => void
 
   // Effect actions — operate on selected frame's effectChain (backward compat)
@@ -146,7 +149,7 @@ export const useStore = create<GlitchState>()(
     persist(
       (set, get) => ({
         // Document
-        document: { ...DEFAULT_DOCUMENT, frames: [], globalEffectChain: [], grid: { ...DEFAULT_DOCUMENT.grid } },
+        document: { ...DEFAULT_DOCUMENT, frames: [], globalEffectChain: [], grid: { ...DEFAULT_DOCUMENT.grid }, background: { ...DEFAULT_BACKGROUND } },
         documentCreated: false,
 
         // Selection
@@ -198,8 +201,9 @@ export const useStore = create<GlitchState>()(
         },
 
         resetDocument: () => {
+          removeCachedBitmap(BACKGROUND_BITMAP_KEY)
           set((s) => {
-            s.document = { ...DEFAULT_DOCUMENT, frames: [], globalEffectChain: [], grid: { ...DEFAULT_DOCUMENT.grid } } as any
+            s.document = { ...DEFAULT_DOCUMENT, frames: [], globalEffectChain: [], grid: { ...DEFAULT_DOCUMENT.grid }, background: { ...DEFAULT_BACKGROUND } } as any
             s.documentCreated = false
             s.selectedFrameId = null
             s.selectedEffectId = null
@@ -250,13 +254,33 @@ export const useStore = create<GlitchState>()(
           get().bumpGeneration()
         },
 
-        setBackgroundColor: (color) => {
-          set((s) => { s.document.backgroundColor = color as any })
+        setBackground: (background) => {
+          set((s) => { s.document.background = background as any })
           get().bumpGeneration()
         },
 
-        setBackgroundAlpha: (alpha) => {
-          set((s) => { s.document.backgroundAlpha = alpha })
+        setBackgroundImage: async (file) => {
+          const result = await loadImageFromFile(file)
+          const sourceUrl = URL.createObjectURL(file)
+          cacheBitmap(BACKGROUND_BITMAP_KEY, result.bitmap)
+          set((s) => {
+            s.document.background = {
+              type: 'image',
+              sourceUrl,
+              meta: result.meta,
+              alpha: s.document.background?.alpha ?? 1,
+            } as any
+          })
+          get().pushHistory()
+          get().bumpGeneration()
+        },
+
+        clearBackgroundImage: () => {
+          removeCachedBitmap(BACKGROUND_BITMAP_KEY)
+          set((s) => {
+            s.document.background = { type: 'color', color: [0, 0, 0], alpha: s.document.background?.alpha ?? 1 } as any
+          })
+          get().pushHistory()
           get().bumpGeneration()
         },
 

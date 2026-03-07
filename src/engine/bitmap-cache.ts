@@ -4,6 +4,9 @@
  */
 const cache = new Map<string, ImageBitmap>()
 
+/** Cache key for the document background image bitmap */
+export const BACKGROUND_BITMAP_KEY = '__background__'
+
 export function cacheBitmap(frameId: string, bitmap: ImageBitmap): void {
   cache.set(frameId, bitmap)
 }

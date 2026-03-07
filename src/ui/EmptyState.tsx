@@ -24,7 +24,11 @@ export default function EmptyState({ onShowAIDialog: _onShowAIDialog }: { onShow
   }, [canvasWidth, canvasHeight])
 
   useEffect(() => {
-    useStore.getState().setBackgroundAlpha(transparentBg ? 0 : 1)
+    useStore.getState().setBackground({
+      type: 'color',
+      color: [0, 0, 0],
+      alpha: transparentBg ? 0 : 1,
+    })
   }, [transparentBg])
 
   const handlePresetChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
