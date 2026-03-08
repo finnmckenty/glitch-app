@@ -68,6 +68,10 @@ function ParamControl({
   switch (param.type) {
     case 'number': {
       const numVal = (value as number) ?? param.default
+      const step = param.step ?? 1
+      // Determine decimal places from step to avoid floating-point display artifacts
+      const decimals = step >= 1 ? 0 : Math.max(0, Math.ceil(-Math.log10(step)))
+      const displayVal = typeof numVal === 'number' ? parseFloat(numVal.toFixed(decimals)) : numVal
       return (
         <div className="px-1">
           <div className="flex items-center justify-between mb-0.5">
@@ -78,9 +82,8 @@ function ParamControl({
                   onClick={() => {
                     const min = param.min ?? 0
                     const max = param.max ?? 100
-                    const step = param.step ?? 1
                     const val = min + Math.random() * (max - min)
-                    onChange(Math.round(val / step) * step)
+                    onChange(parseFloat((Math.round(val / step) * step).toFixed(decimals)))
                   }}
                   className="text-[10px] text-neutral-600 hover:text-white transition-colors"
                   title="Regenerate"
@@ -89,7 +92,7 @@ function ParamControl({
                 </button>
               )}
             </div>
-            <span className="text-[10px] text-neutral-600 font-mono">{numVal}</span>
+            <span className="text-[10px] text-neutral-600 font-mono">{displayVal}</span>
           </div>
           <input
             type="range"
