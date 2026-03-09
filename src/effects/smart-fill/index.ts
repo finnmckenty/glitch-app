@@ -237,7 +237,7 @@ void main() {
 registerEffect({
   id: 'smart-fill',
   name: 'Smart Fill',
-  category: 'overlay',
+  category: 'original',
   description: 'Bauhaus-inspired pattern generation with structured variation',
   tags: ['fill', 'pattern', 'bauhaus', 'swiss', 'grid', 'triangle', 'generative', 'designed'],
   execution: 'gpu',

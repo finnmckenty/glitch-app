@@ -197,7 +197,7 @@ void main() {
 registerEffect({
   id: 'path-shift',
   name: 'Path Shift',
-  category: 'distortion',
+  category: 'original',
   description: 'Shift pixels horizontally along a curved path from top to bottom',
   tags: ['path', 'shift', 'skew', 'curve', 'distortion', 'displacement'],
   execution: 'gpu',

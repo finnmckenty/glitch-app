@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 
 export type EffectCategory =
+  | 'original'
   | 'pixel-manipulation'
   | 'distortion'
   | 'noise-artifacts'
