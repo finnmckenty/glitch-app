@@ -10,7 +10,7 @@ export type EffectCategory =
 
 export type EffectExecutionContext = 'gpu' | 'cpu' | 'hybrid'
 
-export type ParamType = 'number' | 'boolean' | 'select' | 'color' | 'vec2' | 'image'
+export type ParamType = 'number' | 'boolean' | 'select' | 'color' | 'vec2' | 'image' | 'string'
 
 export interface EffectParamDef {
   key: string
@@ -23,6 +23,8 @@ export interface EffectParamDef {
   options?: Array<{ value: unknown; label: string }>
   /** Only show this param when another param has one of the listed values */
   showWhen?: { key: string; values: unknown[] }
+  /** Placeholder text for string inputs */
+  placeholder?: string
   /** Auto-randomize this param when effect is first added */
   randomize?: boolean
   /** Hint for LLM prompt interpretation */

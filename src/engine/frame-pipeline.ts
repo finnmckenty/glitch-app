@@ -180,6 +180,9 @@ export class FramePipeline {
     width: number,
     height: number
   ): Promise<WebGLTexture> {
+    // Ensure integer dimensions for ImageData, OffscreenCanvas, and readPixels
+    width = Math.floor(width)
+    height = Math.floor(height)
     const def = getEffect(inst.effectId)
     if (!def?.cpu) {
       console.warn(`[FramePipeline] CPU effect '${inst.effectId}' not found, skipping`)
@@ -251,6 +254,9 @@ export class FramePipeline {
 
   private readPixelsFromCurrentFBO(width: number, height: number): ImageData {
     const { gl } = this.ctx
+    // Ensure integer dimensions — fractional frame sizes cause ImageData constructor to fail
+    width = Math.floor(width)
+    height = Math.floor(height)
     const pixels = new Uint8Array(width * height * 4)
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
     // WebGL reads bottom-up, flip vertically to top-down (Canvas 2D / ImageData convention)

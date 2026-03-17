@@ -210,6 +210,21 @@ function ParamControl({
         </div>
       )
     }
+    case 'string': {
+      const strVal = (value as string) ?? param.default
+      return (
+        <div className="px-1">
+          <label className="text-[10px] text-neutral-500 block mb-0.5">{param.label}</label>
+          <input
+            type="text"
+            value={strVal}
+            placeholder={param.placeholder}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full bg-neutral-800 text-xs text-neutral-300 rounded px-2 py-1 border border-neutral-700 outline-none focus:border-neutral-500"
+          />
+        </div>
+      )
+    }
     default:
       return null
   }

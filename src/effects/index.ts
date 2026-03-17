@@ -22,6 +22,7 @@ import './dither'
 import './color-key'
 
 // CPU effects
+import './step-and-repeat'
 import './pixel-sort'
 import './databend'
 import './jpeg-artifacts'
