@@ -72,8 +72,8 @@ export class ContentRenderer {
       }
 
       case 'solid-color': {
-        const [r, g, b] = frame.content.color
-        // fillOpacity controls the alpha of the solid color itself (the content IS the fill)
+        // fillColor overrides content color when user picks a fill via the frame panel
+        const [r, g, b] = frame.fillColor ?? frame.content.color
         const alpha = frame.fillOpacity ?? 1
         const hash = `solid:${r}:${g}:${b}:${alpha}:${frame.width}x${frame.height}`
         const cached = this.cache.get(frame.id)
