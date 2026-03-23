@@ -1,8 +1,16 @@
 import { registerEffect } from '../registry'
 import type { EffectParams, CpuProcessContext } from '../types'
-import { FONT_CATALOG, loadFont, getFontEntry } from '../../engine/font-loader'
+import { FONT_CATALOG, loadFont } from '../../engine/font-loader'
+import {
+  applyTextStyle,
+  drawTextLine,
+  resetTextStyle,
+  transformText,
+  getTextCanvas,
+} from '../../engine/text-render-utils'
+import Controls from './Controls'
 
-async function processStepAndRepeat(
+async function processTextRepeat(
   imageData: ImageData,
   params: EffectParams,
   _ctx: CpuProcessContext
@@ -10,7 +18,17 @@ async function processStepAndRepeat(
   const text = (params.text as string) || 'HELLO WORLD'
   const fontId = params.font as string
   const fontSize = params.fontSize as number
-  const color = params.color as number[]
+  const fontWeight = (params.fontWeight as number) ?? 400
+  const fontWidth = params.fontWidth as number | undefined
+  const fontSlant = params.fontSlant as number | undefined
+  const fontCasual = params.fontCasual as number | undefined
+  const color = params.color as [number, number, number]
+  const align = (params.align as 'left' | 'center' | 'right') ?? 'left'
+  const letterSpacing = (params.letterSpacing as number) ?? 0
+  const textTransform = (params.textTransform as 'none' | 'uppercase' | 'lowercase') ?? 'none'
+  const strikethrough = (params.strikethrough as boolean) ?? false
+  const underline = (params.underline as boolean) ?? false
+  const aliased = (params.aliased as boolean) ?? false
   const steps = params.steps as number
   const spacing = params.spacing as number
   const offsetAmount = params.offsetAmount as number
@@ -24,23 +42,50 @@ async function processStepAndRepeat(
 
   // Load font
   await loadFont(fontId)
-  const entry = getFontEntry(fontId)
-  const familyName = entry ? entry.googleFamily.replace(/\+/g, ' ') : 'Inter'
+
+  // Aliasing: render at 0.25x then scale up with nearest-neighbor
+  const scale = aliased ? 0.25 : 1
+  const rw = Math.max(1, Math.round(width * scale))
+  const rh = Math.max(1, Math.round(height * scale))
+  const rFontSize = fontSize * scale
+  const rSpacing = spacing * scale
+  const rOffsetAmount = offsetAmount * scale
 
   // Calculate max possible drift to allow overflow
-  const maxDrift = steps * offsetAmount
-  const canvasWidth = width + maxDrift * 2
+  const maxDrift = Math.ceil(steps * rOffsetAmount)
+  const canvasWidth = rw + maxDrift * 2
 
-  // Create wider canvas to allow text overflow past frame edges
-  const canvas = new OffscreenCanvas(canvasWidth, height)
+  // Use DOM canvas for variable font support
+  const canvas = getTextCanvas(canvasWidth, rh)
   const ctx = canvas.getContext('2d')!
-  // Place existing content centered in the wider canvas
-  ctx.putImageData(imageData, maxDrift, 0)
+  ctx.clearRect(0, 0, canvasWidth, rh)
 
-  // Text style
-  const fillColor = `rgb(${Math.round(color[0] * 255)}, ${Math.round(color[1] * 255)}, ${Math.round(color[2] * 255)})`
-  ctx.fillStyle = fillColor
-  ctx.textBaseline = 'top'
+  // Draw existing content centered in the wider canvas
+  if (scale === 1) {
+    ctx.putImageData(imageData, maxDrift, 0)
+  } else {
+    // For aliased mode, draw the source image scaled down
+    const tempCanvas = new OffscreenCanvas(width, height)
+    const tempCtx = tempCanvas.getContext('2d')!
+    tempCtx.putImageData(imageData, 0, 0)
+    ctx.drawImage(tempCanvas, maxDrift, 0, rw, rh)
+  }
+
+  // Apply text style via shared utility
+  applyTextStyle(ctx, {
+    fontId,
+    fontSize: rFontSize,
+    fontWeight,
+    fontWidth,
+    fontSlant,
+    fontCasual,
+    color,
+    align,
+    letterSpacing,
+    textTransform,
+  })
+
+  const displayText = transformText(text, textTransform)
 
   // Seeded RNG
   let rng = seed * 12345.6789
@@ -49,21 +94,18 @@ async function processStepAndRepeat(
     return rng / 2147483647
   }
 
-  const rowHeight = fontSize + spacing
+  const rowHeight = rFontSize + rSpacing
   let currentX = 0
-
-  // Set font once for measurement
-  ctx.font = `${fontSize}px "${familyName}"`
 
   for (let i = 0; i < steps; i++) {
     // Offset decision
     const r1 = rand()
     if (r1 > (1.0 - offsetFreq)) {
-      let shift = rand() * offsetAmount
+      let shift = rand() * rOffsetAmount
       if (direction === 'left') {
         shift = -shift
       } else if (direction === 'both') {
-        shift = (rand() * 2 - 1) * offsetAmount
+        shift = (rand() * 2 - 1) * rOffsetAmount
       }
       currentX += shift
     }
@@ -77,17 +119,50 @@ async function processStepAndRepeat(
 
     const y = i * rowHeight
 
+    // Calculate x position based on alignment
+    let x: number
+    if (align === 'center') x = maxDrift + currentX + rw / 2
+    else if (align === 'right') x = maxDrift + currentX + rw
+    else x = maxDrift + currentX
+
     ctx.save()
-    ctx.translate(maxDrift + currentX, y)
+    ctx.translate(x, y)
     ctx.scale(1, scaleY)
-    ctx.font = `${fontSize}px "${familyName}"`
-    ctx.fillStyle = fillColor
-    ctx.fillText(text, 0, 0)
+    // Re-apply font after save/restore (scale changes the context)
+    applyTextStyle(ctx, {
+      fontId,
+      fontSize: rFontSize,
+      fontWeight,
+      fontWidth,
+      fontSlant,
+      fontCasual,
+      color,
+      align,
+      letterSpacing,
+      textTransform,
+    })
+    drawTextLine(ctx, displayText, 0, 0, rFontSize, align, strikethrough, underline)
     ctx.restore()
   }
 
-  // Crop back to original frame size, extracting from the center of the wider canvas
-  return ctx.getImageData(maxDrift, 0, width, height)
+  resetTextStyle(ctx)
+
+  if (!aliased) {
+    // Crop back to original frame size
+    return ctx.getImageData(maxDrift, 0, width, height)
+  }
+
+  // Aliased: scale small render back up with nearest-neighbor
+  const smallData = ctx.getImageData(maxDrift, 0, rw, rh)
+  const smallCanvas = new OffscreenCanvas(rw, rh)
+  const smallCtx = smallCanvas.getContext('2d')!
+  smallCtx.putImageData(smallData, 0, 0)
+
+  const outCanvas = new OffscreenCanvas(width, height)
+  const outCtx = outCanvas.getContext('2d')!
+  outCtx.imageSmoothingEnabled = false
+  outCtx.drawImage(smallCanvas, 0, 0, width, height)
+  return outCtx.getImageData(0, 0, width, height)
 }
 
 registerEffect({
@@ -98,16 +173,44 @@ registerEffect({
   tags: ['text', 'type', 'repeat', 'pattern', 'drift', 'generative'],
   execution: 'cpu',
   cost: 'medium',
+  Controls,
   paramDefs: [
     { key: 'text', label: 'Text', type: 'string', default: 'HELLO WORLD',
       placeholder: 'Enter text...', semanticHint: 'Text string to repeat vertically' },
     { key: 'font', label: 'Font', type: 'select', default: 'inter',
       options: FONT_CATALOG.map(f => ({ value: f.id, label: f.name })),
       semanticHint: 'Font family for the text' },
+    // Font axis params — UI rendered by custom Controls, not auto-gen
+    { key: 'fontWeight', label: 'Weight', type: 'number', default: 400, min: 100, max: 900, step: 1,
+      semanticHint: 'Font weight' },
+    { key: 'fontWidth', label: 'Width', type: 'number', default: undefined as any, min: 75, max: 125, step: 1,
+      semanticHint: 'Font width axis' },
+    { key: 'fontSlant', label: 'Slant', type: 'number', default: undefined as any, min: -15, max: 0, step: 1,
+      semanticHint: 'Font slant axis' },
+    { key: 'fontCasual', label: 'Casual', type: 'number', default: undefined as any, min: 0, max: 1, step: 0.01,
+      semanticHint: 'Font casual axis' },
     { key: 'fontSize', label: 'Font Size', type: 'number', default: 48, min: 8, max: 200, step: 1,
       semanticHint: 'Text size in pixels' },
     { key: 'color', label: 'Color', type: 'color', default: [0, 0, 0],
       semanticHint: 'Text color' },
+    { key: 'align', label: 'Align', type: 'select', default: 'left', options: [
+      { value: 'left', label: 'Left' },
+      { value: 'center', label: 'Center' },
+      { value: 'right', label: 'Right' },
+    ], semanticHint: 'Text alignment' },
+    { key: 'letterSpacing', label: 'Letter Spacing', type: 'number', default: 0, min: -0.1, max: 0.5, step: 0.005,
+      semanticHint: 'Letter spacing in em units' },
+    { key: 'textTransform', label: 'Case', type: 'select', default: 'none', options: [
+      { value: 'none', label: 'None' },
+      { value: 'uppercase', label: 'UPPERCASE' },
+      { value: 'lowercase', label: 'lowercase' },
+    ], semanticHint: 'Text case transform' },
+    { key: 'strikethrough', label: 'Strikethrough', type: 'boolean', default: false,
+      semanticHint: 'Draw line through text' },
+    { key: 'underline', label: 'Underline', type: 'boolean', default: false,
+      semanticHint: 'Draw line under text' },
+    { key: 'aliased', label: 'Aliased', type: 'boolean', default: false,
+      semanticHint: 'PS1-style pixelated text rendering' },
     { key: 'steps', label: 'Steps', type: 'number', default: 20, min: 1, max: 100, step: 1,
       semanticHint: 'Number of repeated copies' },
     { key: 'spacing', label: 'Spacing', type: 'number', default: 0, min: -50, max: 100, step: 1,
@@ -128,5 +231,5 @@ registerEffect({
     { key: 'seed', label: 'Seed', type: 'number', default: 42, min: 0, max: 9999, step: 1,
       randomize: true, semanticHint: 'Random seed for pattern generation' },
   ],
-  cpu: { process: processStepAndRepeat },
+  cpu: { process: processTextRepeat },
 })

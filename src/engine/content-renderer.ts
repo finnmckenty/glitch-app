@@ -2,6 +2,7 @@ import type { Frame, TextContent } from '../types/canvas'
 import type { SharedContext } from './shared-context'
 import { getCachedBitmap } from './bitmap-cache'
 import { getFontEntry, isFontLoaded, loadFont } from './font-loader'
+import { applyTextStyle, drawTextLine, resetTextStyle, transformText } from './text-render-utils'
 
 /**
  * Rasterizes frame content into WebGL textures.
@@ -261,56 +262,23 @@ export class ContentRenderer {
     h: number,
     scale: number
   ): void {
-    const entry = getFontEntry(content.fontFamily)
-    const familyName = entry
-      ? entry.googleFamily.replace(/\+/g, ' ')
-      : content.fontFamily
-
     const fontSize = content.fontSize * scale
     const padding = 4 * scale
 
-    // Build font-variation-settings from the font's actual axis definitions.
-    // TextContent stores axis values generically: fontWidth → 2nd axis, fontSlant → 3rd axis, etc.
-    // Map to the font's real axis tags (e.g. wdth, slnt for Inter; BLED, SCAN for Sixtyfour).
-    const variations: string[] = []
-    if (entry) {
-      for (const axis of entry.axes) {
-        if (axis.tag === 'wght') continue // weight is set via ctx.font
-        let value: number | undefined
-        if (axis.tag === 'wdth' || axis.tag === 'BLED') value = content.fontWidth
-        else if (axis.tag === 'slnt' || axis.tag === 'SCAN') value = content.fontSlant
-        else if (axis.tag === 'CASL') value = content.fontCasual
-        else if (axis.tag === 'MONO') value = content.fontCasual != null ? (content.fontCasual > 0.5 ? 1 : 0) : undefined
-        if (value != null) variations.push(`"${axis.tag}" ${value}`)
-      }
-    }
+    applyTextStyle(ctx, {
+      fontId: content.fontFamily,
+      fontSize: content.fontSize,
+      fontWeight: content.fontWeight,
+      fontWidth: content.fontWidth,
+      fontSlant: content.fontSlant,
+      fontCasual: content.fontCasual,
+      color: content.color,
+      align: content.align,
+      letterSpacing: content.letterSpacing,
+      textTransform: content.textTransform,
+    }, scale)
 
-    // Set font on canvas — use the parent canvas element's style for variation settings
-    const canvasEl = ctx.canvas as HTMLCanvasElement
-    if (variations.length > 0) {
-      canvasEl.style.fontVariationSettings = variations.join(', ')
-    } else {
-      canvasEl.style.fontVariationSettings = ''
-    }
-
-    ctx.font = `${content.fontWeight} ${fontSize}px "${familyName}"`
-    ctx.textBaseline = 'top'
-    ctx.textAlign = content.align
-
-    // Letter spacing
-    const spacing = content.letterSpacing * fontSize
-    if ('letterSpacing' in ctx) {
-      (ctx as any).letterSpacing = `${spacing}px`
-    }
-
-    // Color
-    const [cr, cg, cb] = content.color
-    ctx.fillStyle = `rgb(${Math.round(cr * 255)}, ${Math.round(cg * 255)}, ${Math.round(cb * 255)})`
-
-    // Apply text transform
-    let text = content.text
-    if (content.textTransform === 'uppercase') text = text.toUpperCase()
-    else if (content.textTransform === 'lowercase') text = text.toLowerCase()
+    const text = transformText(content.text, content.textTransform)
 
     // Word wrap
     const maxWidth = w - padding * 2
@@ -326,41 +294,12 @@ export class ContentRenderer {
     // Draw lines
     for (let i = 0; i < lines.length; i++) {
       const y = padding + i * lineH
-      if (y + lineH > h + lineH) break // stop if below canvas (allow last line to partly show)
+      if (y + lineH > h + lineH) break
 
-      ctx.fillText(lines[i], x, y)
-
-      // Strikethrough
-      if (content.strikethrough) {
-        const metrics = ctx.measureText(lines[i])
-        const lineY = y + fontSize * 0.55
-        const lw = Math.max(1, fontSize * 0.06)
-        ctx.fillRect(
-          content.align === 'center' ? x - metrics.width / 2 : content.align === 'right' ? x - metrics.width : x,
-          lineY,
-          metrics.width,
-          lw
-        )
-      }
-
-      // Underline
-      if (content.underline) {
-        const metrics = ctx.measureText(lines[i])
-        const lineY = y + fontSize * 0.95
-        const lw = Math.max(1, fontSize * 0.06)
-        ctx.fillRect(
-          content.align === 'center' ? x - metrics.width / 2 : content.align === 'right' ? x - metrics.width : x,
-          lineY,
-          metrics.width,
-          lw
-        )
-      }
+      drawTextLine(ctx, lines[i], x, y, fontSize, content.align, content.strikethrough, content.underline)
     }
 
-    // Reset letter spacing
-    if ('letterSpacing' in ctx) {
-      (ctx as any).letterSpacing = '0px'
-    }
+    resetTextStyle(ctx)
   }
 
   /**
