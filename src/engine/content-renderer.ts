@@ -237,7 +237,7 @@ export class ContentRenderer {
           uploadCtx.drawImage(domCanvas, 0, 0)
           uploadCtx.restore()
 
-          const tex = this.ctx.uploadToTexture(upload, cached?.texture, aliased)
+          const tex = this.ctx.uploadToTexture(upload, cached?.texture, !!aliased)
           this.cache.set(frame.id, { texture: tex, hash })
           return tex
         } catch (err) {
