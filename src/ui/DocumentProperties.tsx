@@ -68,7 +68,7 @@ export default function DocumentProperties() {
   return (
     <div className="px-2 py-2 border-b border-neutral-800 space-y-2">
       <div className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">
-        Background
+        Document Background
       </div>
 
       {/* Type selector */}
