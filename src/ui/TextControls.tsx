@@ -354,17 +354,18 @@ export default function TextControls() {
         >
           <span className="underline">U</span>
         </button>
-        <button
-          onClick={() => updateContent({ aliased: !content.aliased })}
-          className={`px-2 py-0.5 text-[10px] rounded border ${
-            content.aliased
-              ? 'border-neutral-500 text-white bg-neutral-700'
-              : 'border-neutral-700 text-neutral-600 bg-neutral-800'
-          }`}
-          title="PS1-style aliased rendering"
+        <select
+          value={content.aliased || 0}
+          onChange={(e) => updateContent({ aliased: parseFloat(e.target.value) || undefined })}
+          className="px-1 py-0.5 text-[10px] rounded border border-neutral-700 bg-neutral-800 text-neutral-300 outline-none"
+          title="Aliased rendering intensity"
         >
-          Aliased
-        </button>
+          <option value={0}>Smooth</option>
+          <option value={0.25}>Aliased: Light</option>
+          <option value={0.15}>Aliased: Medium</option>
+          <option value={0.08}>Aliased: Heavy</option>
+          <option value={0.04}>Aliased: Extreme</option>
+        </select>
       </div>
     </div>
   )

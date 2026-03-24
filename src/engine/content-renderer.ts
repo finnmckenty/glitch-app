@@ -44,7 +44,6 @@ export class ContentRenderer {
    */
   getTexture(frame: Frame): WebGLTexture | null {
     const fh = this.fillHash(frame)
-
     switch (frame.content.type) {
       case 'image': {
         const bitmap = getCachedBitmap(frame.id)
@@ -117,7 +116,7 @@ export class ContentRenderer {
 
       case 'shape': {
         const { shape, fill, stroke, strokeWidth, aliased } = frame.content
-        const scale = aliased ? 0.25 : 1
+        const scale = aliased || 1
         const rw = Math.max(1, Math.round(frame.width * scale))
         const rh = Math.max(1, Math.round(frame.height * scale))
         // fillOpacity controls the shape's fill alpha (unified with solid-color)
@@ -210,11 +209,10 @@ export class ContentRenderer {
             return null
           }
 
-          const aliased = content.aliased ?? false
-          const scale = aliased ? 0.25 : 1
+          const aliased = content.aliased || 0
+          const scale = aliased || 1
           const rw = Math.max(1, Math.round(frame.width * scale))
           const rh = Math.max(1, Math.round(frame.height * scale))
-
           const hash = `text:${content.text}:${content.fontFamily}:${content.fontSize}:${content.fontWeight}:${content.fontWidth ?? ''}:${content.fontSlant ?? ''}:${content.fontCasual ?? ''}:${content.color}:${content.align}:${content.letterSpacing}:${content.lineHeight}:${content.textTransform}:${content.strikethrough}:${content.underline}:${aliased}:${rw}x${rh}${fh}`
           const cached = this.cache.get(frame.id)
           if (cached && cached.hash === hash) return cached.texture

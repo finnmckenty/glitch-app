@@ -122,16 +122,17 @@ export default function ShapeControls() {
       {/* Aliased edges */}
       <div className="flex items-center gap-2">
         <label className="text-[10px] text-neutral-500 w-14 shrink-0">Aliased</label>
-        <button
-          onClick={() => updateContent({ aliased: !content.aliased })}
-          className={`text-[10px] px-1.5 py-0.5 rounded border ${
-            content.aliased
-              ? 'border-neutral-500 text-white bg-neutral-700'
-              : 'border-neutral-700 text-neutral-600 bg-neutral-800'
-          }`}
+        <select
+          value={content.aliased || 0}
+          onChange={(e) => updateContent({ aliased: parseFloat(e.target.value) || undefined })}
+          className="text-[10px] px-1 py-0.5 rounded border border-neutral-700 bg-neutral-800 text-neutral-300 outline-none"
         >
-          {content.aliased ? 'On' : 'Off'}
-        </button>
+          <option value={0}>Off</option>
+          <option value={0.25}>Light</option>
+          <option value={0.15}>Medium</option>
+          <option value={0.08}>Heavy</option>
+          <option value={0.04}>Extreme</option>
+        </select>
       </div>
     </div>
   )

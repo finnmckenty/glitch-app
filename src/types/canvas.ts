@@ -37,8 +37,8 @@ export interface TextContent {
   textTransform: 'none' | 'uppercase' | 'lowercase'
   strikethrough: boolean
   underline: boolean
-  /** PS1-style aliased rendering */
-  aliased?: boolean
+  /** Aliased rendering scale factor (0.04–0.25), or undefined/0 for off */
+  aliased?: number
 }
 
 export interface GradientContent {
@@ -62,8 +62,8 @@ export interface ShapeContent {
   /** RGB 0-1, or null for no stroke */
   stroke: [number, number, number] | null
   strokeWidth: number
-  /** Render with PS1-style aliased (jagged) edges */
-  aliased?: boolean
+  /** Aliased rendering scale factor (0.04–0.25), or undefined/0 for off */
+  aliased?: number
 }
 
 export interface AIImageContent {
