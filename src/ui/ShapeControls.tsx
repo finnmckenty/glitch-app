@@ -121,18 +121,18 @@ export default function ShapeControls() {
 
       {/* Aliased edges */}
       <div className="flex items-center gap-2">
-        <label className="text-[10px] text-neutral-500 w-14 shrink-0">Aliased</label>
-        <select
+        <label className="text-[10px] text-neutral-500 w-14 shrink-0">Aliasing</label>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
           value={content.aliased || 0}
           onChange={(e) => updateContent({ aliased: parseFloat(e.target.value) || undefined })}
-          className="text-[10px] px-1 py-0.5 rounded border border-neutral-700 bg-neutral-800 text-neutral-300 outline-none"
-        >
-          <option value={0}>Off</option>
-          <option value={0.25}>Light</option>
-          <option value={0.15}>Medium</option>
-          <option value={0.08}>Heavy</option>
-          <option value={0.04}>Extreme</option>
-        </select>
+          className="flex-1 h-1 accent-neutral-400"
+          title="Aliased rendering intensity"
+        />
+        <span className="text-[10px] text-neutral-500 w-6 text-right">{content.aliased ? Math.round((content.aliased) * 100) + '%' : 'Off'}</span>
       </div>
     </div>
   )

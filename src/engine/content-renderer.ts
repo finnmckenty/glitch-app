@@ -4,6 +4,13 @@ import { getCachedBitmap } from './bitmap-cache'
 import { getFontEntry, isFontLoaded, loadFont } from './font-loader'
 import { applyTextStyle, drawTextLine, resetTextStyle, transformText } from './text-render-utils'
 
+/** Map 0–1 aliased slider value to render scale factor. 0 = off (1.0x), 1 = extreme (0.04x). */
+export function aliasedScale(value: number | undefined): number {
+  if (!value) return 1
+  // Linear map: value 0→0.25x (light), value 1→0.04x (extreme)
+  return 0.04 + (1 - value) * 0.21
+}
+
 /**
  * Rasterizes frame content into WebGL textures.
  */
@@ -116,7 +123,7 @@ export class ContentRenderer {
 
       case 'shape': {
         const { shape, fill, stroke, strokeWidth, aliased } = frame.content
-        const scale = aliased || 1
+        const scale = aliasedScale(aliased)
         const rw = Math.max(1, Math.round(frame.width * scale))
         const rh = Math.max(1, Math.round(frame.height * scale))
         // fillOpacity controls the shape's fill alpha (unified with solid-color)
@@ -210,7 +217,7 @@ export class ContentRenderer {
           }
 
           const aliased = content.aliased || 0
-          const scale = aliased || 1
+          const scale = aliasedScale(aliased)
           const rw = Math.max(1, Math.round(frame.width * scale))
           const rh = Math.max(1, Math.round(frame.height * scale))
           const hash = `text:${content.text}:${content.fontFamily}:${content.fontSize}:${content.fontWeight}:${content.fontWidth ?? ''}:${content.fontSlant ?? ''}:${content.fontCasual ?? ''}:${content.color}:${content.align}:${content.letterSpacing}:${content.lineHeight}:${content.textTransform}:${content.strikethrough}:${content.underline}:${aliased}:${rw}x${rh}${fh}`

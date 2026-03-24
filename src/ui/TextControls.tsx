@@ -331,7 +331,7 @@ export default function TextControls() {
         </div>
       </div>
 
-      {/* Decorations + Aliased */}
+      {/* Decorations */}
       <div className="flex items-center gap-2 flex-wrap">
         <label className="text-[10px] text-neutral-500 w-10 shrink-0">Style</label>
         <button
@@ -354,18 +354,22 @@ export default function TextControls() {
         >
           <span className="underline">U</span>
         </button>
-        <select
+      </div>
+
+      {/* Aliasing */}
+      <div className="flex items-center gap-2">
+        <label className="text-[10px] text-neutral-500 w-10 shrink-0">Aliasing</label>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
           value={content.aliased || 0}
           onChange={(e) => updateContent({ aliased: parseFloat(e.target.value) || undefined })}
-          className="px-1 py-0.5 text-[10px] rounded border border-neutral-700 bg-neutral-800 text-neutral-300 outline-none"
+          className="flex-1 h-1 accent-neutral-400"
           title="Aliased rendering intensity"
-        >
-          <option value={0}>Smooth</option>
-          <option value={0.25}>Aliased: Light</option>
-          <option value={0.15}>Aliased: Medium</option>
-          <option value={0.08}>Aliased: Heavy</option>
-          <option value={0.04}>Aliased: Extreme</option>
-        </select>
+        />
+        <span className="text-[10px] text-neutral-500 w-6 text-right">{content.aliased ? Math.round((content.aliased) * 100) + '%' : 'Off'}</span>
       </div>
     </div>
   )

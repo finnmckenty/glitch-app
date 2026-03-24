@@ -37,7 +37,7 @@ export interface TextContent {
   textTransform: 'none' | 'uppercase' | 'lowercase'
   strikethrough: boolean
   underline: boolean
-  /** Aliased rendering scale factor (0.04–0.25), or undefined/0 for off */
+  /** Aliased rendering intensity 0–1 (0=off, 1=max pixelation), or undefined for off */
   aliased?: number
 }
 
@@ -62,7 +62,7 @@ export interface ShapeContent {
   /** RGB 0-1, or null for no stroke */
   stroke: [number, number, number] | null
   strokeWidth: number
-  /** Aliased rendering scale factor (0.04–0.25), or undefined/0 for off */
+  /** Aliased rendering intensity 0–1 (0=off, 1=max pixelation), or undefined for off */
   aliased?: number
 }
 

@@ -8,6 +8,7 @@ import {
   transformText,
   getTextCanvas,
 } from '../../engine/text-render-utils'
+import { aliasedScale } from '../../engine/content-renderer'
 import Controls from './Controls'
 
 async function processTextRepeat(
@@ -28,7 +29,7 @@ async function processTextRepeat(
   const textTransform = (params.textTransform as 'none' | 'uppercase' | 'lowercase') ?? 'none'
   const strikethrough = (params.strikethrough as boolean) ?? false
   const underline = (params.underline as boolean) ?? false
-  const aliased = parseFloat(params.aliased as string) || 0
+  const aliasedValue = (params.aliased as number) || 0
   const steps = params.steps as number
   const spacing = params.spacing as number
   const offsetAmount = params.offsetAmount as number
@@ -43,8 +44,8 @@ async function processTextRepeat(
   // Load font
   await loadFont(fontId)
 
-  // Aliasing: render at 0.25x then scale up with nearest-neighbor
-  const scale = aliased || 1
+  // Aliasing: render at reduced scale then scale up with nearest-neighbor
+  const scale = aliasedScale(aliasedValue)
   const rw = Math.max(1, Math.round(width * scale))
   const rh = Math.max(1, Math.round(height * scale))
   const rFontSize = fontSize * scale
@@ -147,7 +148,7 @@ async function processTextRepeat(
 
   resetTextStyle(ctx)
 
-  if (!aliased) {
+  if (!aliasedValue) {
     // Crop back to original frame size
     return ctx.getImageData(maxDrift, 0, width, height)
   }
@@ -209,13 +210,8 @@ registerEffect({
       semanticHint: 'Draw line through text' },
     { key: 'underline', label: 'Underline', type: 'boolean', default: false,
       semanticHint: 'Draw line under text' },
-    { key: 'aliased', label: 'Aliased', type: 'select', default: 0, options: [
-      { value: '0', label: 'Off' },
-      { value: '0.25', label: 'Light' },
-      { value: '0.15', label: 'Medium' },
-      { value: '0.08', label: 'Heavy' },
-      { value: '0.04', label: 'Extreme' },
-    ], semanticHint: 'Pixelated rendering intensity' },
+    { key: 'aliased', label: 'Aliasing', type: 'number', default: 0, min: 0, max: 1, step: 0.01,
+      semanticHint: 'Pixelated rendering intensity (0=off, 1=max)' },
     { key: 'steps', label: 'Steps', type: 'number', default: 20, min: 1, max: 100, step: 1,
       semanticHint: 'Number of repeated copies' },
     { key: 'spacing', label: 'Spacing', type: 'number', default: 0, min: -50, max: 100, step: 1,
