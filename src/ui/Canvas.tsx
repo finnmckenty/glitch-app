@@ -107,7 +107,7 @@ export default function Canvas() {
   return (
     <div
       ref={containerRef}
-      className="flex-1 relative bg-neutral-950 overflow-hidden"
+      className="flex-1 relative bg-[#555555] overflow-hidden"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >

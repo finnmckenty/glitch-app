@@ -95,7 +95,7 @@ export default function EmptyState({ onShowAIDialog: _onShowAIDialog }: { onShow
 
   return (
     <div
-      className="flex-1 flex items-center justify-center bg-neutral-950"
+      className="flex-1 flex items-center justify-center bg-[#555555]"
     >
       <div className="text-center space-y-5 max-w-md">
         <h1 className="text-2xl font-bold text-neutral-200 tracking-tight">
