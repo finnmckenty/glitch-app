@@ -122,7 +122,7 @@ export class ContentRenderer {
         const rh = Math.max(1, Math.round(frame.height * scale))
         // fillOpacity controls the shape's fill alpha (unified with solid-color)
         const fillAlpha = frame.fillOpacity ?? 1
-        const hash = `shape:${shape}:${fill}:${stroke}:${strokeWidth}:${aliased}:${fillAlpha}:${rw}x${rh}`
+        const hash = `shape:${shape}:${frame.fillColor ?? fill}:${stroke}:${strokeWidth}:${aliased}:${fillAlpha}:${rw}x${rh}`
         const cached = this.cache.get(frame.id)
         if (cached && cached.hash === hash) return cached.texture
 
@@ -130,9 +130,11 @@ export class ContentRenderer {
         const ctx2d = canvas.getContext('2d')!
         ctx2d.clearRect(0, 0, rw, rh)
 
-        const fr = Math.round(fill[0] * 255)
-        const fg = Math.round(fill[1] * 255)
-        const fb = Math.round(fill[2] * 255)
+        // fillColor overrides content fill when user picks a fill via the frame panel
+        const actualFill = frame.fillColor ?? fill
+        const fr = Math.round(actualFill[0] * 255)
+        const fg = Math.round(actualFill[1] * 255)
+        const fb = Math.round(actualFill[2] * 255)
         ctx2d.fillStyle = `rgba(${fr}, ${fg}, ${fb}, ${fillAlpha})`
 
         const sw = strokeWidth * scale
