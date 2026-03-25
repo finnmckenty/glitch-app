@@ -84,7 +84,7 @@ registerEffect({
   description: 'Stretch a column or row of pixels to the edge of the frame',
   tags: ['smear', 'stretch', 'pixel', 'streak', 'glitch'],
   execution: 'gpu',
-  cost: 'low',
+  cost: 'light',
   paramDefs: [
     {
       key: 'axis', label: 'Axis', type: 'select', default: 'horizontal',
