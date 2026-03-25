@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { getEffect } from '../effects/registry'
 
@@ -10,9 +10,27 @@ export default function EffectChain() {
   const toggleEffect = useStore((s) => s.toggleEffect)
   const removeEffect = useStore((s) => s.removeEffect)
   const reorderEffect = useStore((s) => s.reorderEffect)
+  const savePreset = useStore((s) => s.savePreset)
 
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null)
   const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [presetName, setPresetName] = useState('')
+  const [saved, setSaved] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (saving && inputRef.current) inputRef.current.focus()
+  }, [saving])
+
+  const handleSavePreset = () => {
+    if (!presetName.trim()) return
+    savePreset(presetName.trim(), [])
+    setPresetName('')
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
 
   const chain = frames.find((f) => f.id === selectedFrameId)?.effectChain ?? []
   const selectedInstanceId = selectedEffectId
@@ -98,6 +116,43 @@ export default function EffectChain() {
           </div>
         )
       })}
+
+      {/* Save as Preset */}
+      {saving ? (
+        <div className="flex gap-1 mt-2 px-1">
+          <input
+            ref={inputRef}
+            value={presetName}
+            onChange={(e) => setPresetName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSavePreset()
+              if (e.key === 'Escape') { setSaving(false); setPresetName('') }
+            }}
+            placeholder="Preset name..."
+            className="flex-1 px-2 py-1 text-[10px] bg-neutral-800 text-neutral-300 rounded border border-neutral-700 outline-none focus:border-neutral-500"
+          />
+          <button
+            onClick={handleSavePreset}
+            disabled={!presetName.trim()}
+            className="px-2 py-1 text-[10px] bg-neutral-700 text-neutral-300 rounded hover:bg-neutral-600 disabled:opacity-30"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => { setSaving(false); setPresetName('') }}
+            className="px-1 py-1 text-[10px] text-neutral-500 hover:text-neutral-300"
+          >
+            {'\u2715'}
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setSaving(true)}
+          className="mt-2 px-2 py-1 text-[10px] text-neutral-500 hover:text-neutral-300 w-full text-left"
+        >
+          {saved ? '\u2713 Saved!' : 'Save as Preset'}
+        </button>
+      )}
     </div>
   )
 }

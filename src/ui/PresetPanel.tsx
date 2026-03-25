@@ -4,7 +4,7 @@ import { getBuiltinPresets, generateRandomChain } from '../prompt/randomizer'
 import type { Preset } from '../store'
 
 export default function PresetPanel({ onClose }: { onClose: () => void }) {
-  const [tab, setTab] = useState<'builtin' | 'user'>('builtin')
+  const [tab, setTab] = useState<'builtin' | 'user'>('user')
   const [saveName, setSaveName] = useState('')
   const userPresets = useStore((s) => s.presets)
   const applyPreset = useStore((s) => s.applyPreset)
