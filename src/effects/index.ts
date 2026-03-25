@@ -20,6 +20,7 @@ import './smart-fill'
 import './slice-shift'
 import './dither'
 import './color-key'
+import './pixel-smear'
 
 // CPU effects
 import './step-and-repeat'
