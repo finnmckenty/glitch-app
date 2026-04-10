@@ -8,7 +8,8 @@ import { randomParamValue } from '../prompt/randomizer'
 import type { CanvasDocument, Frame, FrameContent, GridConfig, Background } from '../types/canvas'
 import { DEFAULT_DOCUMENT, DEFAULT_BACKGROUND } from '../types/canvas'
 import { loadImageFromFile } from '../engine/image-loader'
-import { cacheBitmap, removeCachedBitmap, BACKGROUND_BITMAP_KEY } from '../engine/bitmap-cache'
+import { cacheBitmap, removeCachedBitmap, clearBitmapCache, BACKGROUND_BITMAP_KEY } from '../engine/bitmap-cache'
+import { serializeDocument, deserializeDocument } from '../engine/save-load'
 
 // ---- Persisted types ----
 
@@ -123,6 +124,10 @@ interface GlitchState {
   // Prompt history (persisted)
   promptHistory: PromptHistoryEntry[]
   addPromptEntry: (entry: Omit<PromptHistoryEntry, 'timestamp'>) => void
+
+  // Save/Load
+  saveDocument: () => Promise<void>
+  loadDocument: (file: File) => Promise<void>
 
   // Render generation (for stale-check)
   generation: number
@@ -465,6 +470,34 @@ export const useStore = create<GlitchState>()(
             s.promptHistory.push({ ...entry, timestamp: Date.now() } as any)
             if (s.promptHistory.length > 500) s.promptHistory.shift()
           }),
+
+        // Save/Load
+        saveDocument: async () => {
+          const blob = await serializeDocument(get().document)
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `glitch-${Date.now()}.glitch`
+          a.click()
+          URL.revokeObjectURL(url)
+        },
+
+        loadDocument: async (file: File) => {
+          const result = await deserializeDocument(file)
+          clearBitmapCache()
+          for (const [key, bitmap] of result.bitmaps) {
+            cacheBitmap(key, bitmap)
+          }
+          set((s) => {
+            s.document = result.document as any
+            s.documentCreated = true
+            s.selectedFrameId = null
+            s.selectedEffectId = null
+            s.history = [JSON.parse(JSON.stringify(result.document))]
+            s.historyIndex = 0
+          })
+          get().bumpGeneration()
+        },
 
         // Generation
         generation: 0,

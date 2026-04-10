@@ -16,6 +16,9 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog: _onShowAIDialog
   const selectedShapeType = useStore((s) => s.selectedShapeType)
   const setSelectedShapeType = useStore((s) => s.setSelectedShapeType)
   const importInputRef = useRef<HTMLInputElement>(null)
+  const loadInputRef = useRef<HTMLInputElement>(null)
+  const saveDocument = useStore((s) => s.saveDocument)
+  const loadDocument = useStore((s) => s.loadDocument)
 
   const handleExport = async () => {
     const comp = getCompositor()
@@ -188,13 +191,45 @@ export default function Toolbar({ onOpenPresets, onShowAIDialog: _onShowAIDialog
       >
         Clear
       </button>
+      <button
+        onClick={() => loadInputRef.current?.click()}
+        className="px-2 py-0.5 text-[10px] text-neutral-500 hover:text-white"
+      >
+        Load
+      </button>
+      <input
+        ref={loadInputRef}
+        type="file"
+        accept=".glitch"
+        className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0]
+          if (file) {
+            try {
+              await loadDocument(file)
+            } catch (err) {
+              console.error('[Load] Failed:', err)
+              alert(err instanceof Error ? err.message : 'Failed to load file')
+            }
+          }
+          e.target.value = ''
+        }}
+      />
       {documentCreated && (
-        <button
-          onClick={handleExport}
-          className="px-2 py-0.5 text-[10px] bg-neutral-800 text-neutral-300 rounded hover:bg-neutral-700 hover:text-white border border-neutral-700"
-        >
-          Export PNG
-        </button>
+        <>
+          <button
+            onClick={saveDocument}
+            className="px-2 py-0.5 text-[10px] text-neutral-500 hover:text-white"
+          >
+            Save
+          </button>
+          <button
+            onClick={handleExport}
+            className="px-2 py-0.5 text-[10px] bg-neutral-800 text-neutral-300 rounded hover:bg-neutral-700 hover:text-white border border-neutral-700"
+          >
+            Export PNG
+          </button>
+        </>
       )}
     </div>
   )
